@@ -2,7 +2,7 @@
 
 Internal sales intelligence dashboard for the FlytBase Inbound BDR challenge.
 
-This repository is set up as a TypeScript monorepo. The initial product surface is a Next.js dashboard shell with no backend logic wired in yet.
+This repository is set up as a TypeScript monorepo. The product surface starts as a Next.js dashboard shell for internal BDR workflows, with shared domain types, case-study retrieval context, and server-side AI routes.
 
 ## Apps and Packages
 
@@ -27,8 +27,10 @@ flyt-breif/
 - Dashboard layout for an internal sales tool
 - Left-side inbound lead input panel
 - Right-side analysis result placeholder
-- Shared lead and analysis metadata in `packages/core`
-- No backend calls, auth flow, persistence, or scoring logic yet
+- Shared lead and analysis schemas in `packages/core`
+- FlytBase case-study retrieval context in `packages/data`
+- Server-side AI analysis routes in `apps/web`
+- No auth flow, persistence, or production web research yet
 
 ## Getting Started
 
@@ -44,6 +46,8 @@ Open [http://localhost:3001](http://localhost:3001).
 Copy `apps/web/.env.example` to `apps/web/.env.local` and set either `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY`. The web app defaults `AI_MODEL_ID` to `gemini-2.5-flash`.
 
 AI calls are kept server-side. The initial health check lives at `GET /api/health-ai` and uses the Vercel AI SDK Google provider from a Next.js route handler.
+
+Lead analysis uses research adapters from `packages/ai`. `RESEARCH_ADAPTER=demo` is the default and infers account context from the inbound email, company domain, industry, region, and use case without making web requests. `webResearchAdapter` is a placeholder for future Tavily, Exa, Serper, Firecrawl, or Google Custom Search integration.
 
 ## Data Model
 

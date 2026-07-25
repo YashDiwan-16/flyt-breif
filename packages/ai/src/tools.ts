@@ -227,7 +227,7 @@ export const flytBdrTools: FlytBdrTools = {
   gtmMotion: gtmMotionTool,
 };
 
-function extractLeadSignals({
+export function extractLeadSignals({
   metadata,
   rawEmail,
 }: ExtractLeadSignalsInput): ParsedLeadSignals {

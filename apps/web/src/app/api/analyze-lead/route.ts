@@ -1,4 +1,12 @@
-import { flytBdrTools } from "@flyt-breif/ai";
+import {
+  extractLeadSignals,
+  flytBdrTools,
+  getResearchAdapter,
+} from "@flyt-breif/ai";
+import type {
+  ResearchAdapterName,
+  ResearchAdapterResult,
+} from "@flyt-breif/ai";
 import { leadAnalysisSchema, leadInputSchema } from "@flyt-breif/core";
 import type { LeadInput } from "@flyt-breif/core";
 import { generateText, Output, stepCountIs } from "ai";
@@ -28,6 +36,7 @@ Rules:
 - For each BANT item, include score, evidence, missingInfo, and one discoveryQuestion.
 - For sources, use only sourceType values allowed by the schema.
 - Since you cannot browse, do not claim headquarters, company size, funding, customer names, or market facts unless they appear in the inbound email. Mark them as "Unknown - not provided in inbound email" or "Inferred: ..." when needed.
+- If adapter-provided research context is present, treat it as inferred context unless the source explicitly says otherwise.
 - If a case study returned by tools does not include a region, set matchedCaseStudy.region to "Not provided in knowledge base" and include that caveat in warnings.
 
 Workflow:
@@ -58,6 +67,27 @@ export async function POST(request: Request) {
   }
 
   try {
+    const leadInput = leadInputResult.data;
+    const researchAdapter = getResearchAdapter(getResearchAdapterName());
+    const parsedLeadSignals = extractLeadSignals({
+      rawEmail: leadInput.rawEmail,
+      metadata: {
+        senderName: leadInput.senderName,
+        senderEmail: leadInput.senderEmail,
+        companyWebsite: leadInput.companyWebsite,
+        region: leadInput.region,
+      },
+    });
+    const researchContext = await researchAdapter.research({
+      companyDomain: getCompanyDomain(leadInput.companyWebsite),
+      companyName: parsedLeadSignals.companyName,
+      companyWebsite: leadInput.companyWebsite,
+      industry: parsedLeadSignals.industry,
+      keywords: parsedLeadSignals.keywords,
+      rawEmail: leadInput.rawEmail,
+      region: parsedLeadSignals.region,
+      useCase: parsedLeadSignals.useCase,
+    });
     const { model, modelId } = getGoogleLanguageModel();
     const result = await generateText({
       maxOutputTokens: 6000,
@@ -65,7 +95,7 @@ export async function POST(request: Request) {
       output: Output.object({
         schema: leadAnalysisSchema,
       }),
-      prompt: buildAnalyzeLeadPrompt(leadInputResult.data),
+      prompt: buildAnalyzeLeadPrompt(leadInput, researchContext),
       stopWhen: stepCountIs(6),
       system: ANALYZE_LEAD_SYSTEM_PROMPT,
       temperature: 0.2,
@@ -101,23 +131,45 @@ export async function POST(request: Request) {
   }
 }
 
-function buildAnalyzeLeadPrompt(leadInput: LeadInput) {
+function buildAnalyzeLeadPrompt(
+  leadInput: LeadInput,
+  researchContext: ResearchAdapterResult,
+) {
   return `
 Analyze this FlytBase inbound lead.
 
 LeadInput:
 ${JSON.stringify(leadInput, null, 2)}
 
+ResearchAdapterContext:
+${JSON.stringify(researchContext, null, 2)}
+
 Final response requirements:
 - Return a complete LeadAnalysis object.
 - leadSnapshot should summarize the account, persona, use case, urgency, score, and qualification label.
 - parsedSignals should preserve extracted email evidence and clearly list missingInfo.
-- accountResearch should not use external facts unless supplied by the email. Use inferred or unknown labels where appropriate.
+- accountResearch should use ResearchAdapterContext as inferred account context. Do not present demo adapter output as verified public research.
+- accountResearch should not use external facts unless supplied by the email or adapter context. Use inferred or unknown labels where appropriate.
+- Convert adapter sources into LeadAnalysis sources using allowed sourceType values: lead-email, company-website, account-research, manual-note, or case-study.
 - matchedCaseStudy must come from the FlytBase case-study knowledge base returned by tools.
 - gtmRecommendation should be actionable for a BDR or AE.
 - emailSequence should include practical outbound copy grounded in the inbound email and matched case study.
 - aeHandoffSummary should be useful for an AE preparing for discovery.
 `;
+}
+
+function getCompanyDomain(companyWebsite: string) {
+  try {
+    return new URL(companyWebsite).hostname.replace(/^www\./, "");
+  } catch {
+    return companyWebsite;
+  }
+}
+
+function getResearchAdapterName(): ResearchAdapterName {
+  const configuredAdapter = process.env.RESEARCH_ADAPTER;
+
+  return configuredAdapter === "web" ? "web" : "demo";
 }
 
 function createErrorResponse(
