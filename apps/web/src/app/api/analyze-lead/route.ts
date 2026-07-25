@@ -38,8 +38,9 @@ Rules:
 - Use lowercase BANT keys in the final qualification object: budget, authority, need, timeline.
 - For each BANT item, include score, evidence, missingInfo, and one discoveryQuestion.
 - For sources, use only sourceType values allowed by the schema.
-- Since you cannot browse, do not claim headquarters, company size, funding, customer names, or market facts unless they appear in the inbound email. Mark them as "Unknown - not provided in inbound email" or "Inferred: ..." when needed.
-- If adapter-provided research context is present, treat it as inferred context unless the source explicitly says otherwise.
+- The model cannot browse on its own. Use only the inbound email, tool results, and ResearchAdapterContext.
+- Do not claim headquarters, company size, funding, customer names, or market facts unless they appear in the inbound email or adapter-provided public website context. Mark them as "Unknown - not verified" or "Inferred: ..." when needed.
+- If adapter-provided research context is inferred or limited, preserve that caveat in accountResearch and warnings.
 - If a case study returned by tools does not include a region, set matchedCaseStudy.region to "Not provided in knowledge base" and include that caveat in warnings.
 
 Workflow:
@@ -156,7 +157,7 @@ Final response requirements:
 - Return a complete LeadAnalysis object.
 - leadSnapshot should summarize the account, persona, use case, urgency, score, and qualification label.
 - parsedSignals should preserve extracted email evidence and clearly list missingInfo.
-- accountResearch should use ResearchAdapterContext as inferred account context. Do not present demo adapter output as verified public research.
+- accountResearch should use ResearchAdapterContext. Preserve source caveats, and do not present inferred adapter output as verified public research.
 - accountResearch should not use external facts unless supplied by the email or adapter context. Use inferred or unknown labels where appropriate.
 - Convert adapter sources into LeadAnalysis sources using allowed sourceType values: lead-email, company-website, account-research, manual-note, or case-study.
 - matchedCaseStudy must come from the FlytBase case-study knowledge base returned by tools.
@@ -199,7 +200,8 @@ async function getLeadContext(leadInput: LeadInput) {
     industry: parsedLeadSignals.industry,
     keywords: parsedLeadSignals.keywords,
     rawEmail: leadInput.rawEmail,
-    region: parsedLeadSignals.region,
+    region:
+      parsedLeadSignals.region === "Unknown" ? leadInput.region : parsedLeadSignals.region,
     useCase: parsedLeadSignals.useCase,
   };
 
@@ -220,7 +222,7 @@ async function getLeadContext(leadInput: LeadInput) {
         ...researchContext,
         warnings: [
           ...researchContext.warnings,
-          "Configured research adapter failed; demo research adapter was used.",
+          "Configured research adapter failed; inferred account context was used.",
         ],
       },
     };
@@ -230,7 +232,7 @@ async function getLeadContext(leadInput: LeadInput) {
 function getResearchAdapterName(): ResearchAdapterName {
   const configuredAdapter = process.env.RESEARCH_ADAPTER;
 
-  return configuredAdapter === "web" ? "web" : "demo";
+  return configuredAdapter === "demo" ? "demo" : "web";
 }
 
 function getConfiguredModelId() {

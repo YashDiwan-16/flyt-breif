@@ -13,7 +13,6 @@ import { toast } from "@flyt-breif/ui/components/sonner";
 import {
   AlertCircle,
   ArrowUpRight,
-  Award,
   BarChart3,
   BriefcaseBusiness,
   CheckCircle2,
@@ -123,7 +122,7 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
         </div>
 
         {state.status === "success" ? (
-          <SuccessDemoRibbon
+          <ReportOverviewRibbon
             analysis={state.analysis}
             analysisStatus={state.analysisStatus}
           />
@@ -203,7 +202,7 @@ function AnalysisWorkflowActions({ analysis }: { analysis: LeadAnalysis }) {
   );
 }
 
-function SuccessDemoRibbon({
+function ReportOverviewRibbon({
   analysis,
   analysisStatus,
 }: {
@@ -211,31 +210,31 @@ function SuccessDemoRibbon({
   analysisStatus: AnalysisGenerationStatus;
 }) {
   const bantTotal = getBantTotal(analysis.qualification);
-  const handoffQuestions = analysis.aeHandoffSummary.topDiscoveryQuestions.length;
+  const warnings = getMissingInfoRollup(analysis).length;
 
   return (
     <section className="mt-3 border bg-[#172b24] p-4 text-[#f4fbf4] shadow-[0_18px_45px_rgba(12,35,29,0.16)]">
       <div className="grid gap-3 xl:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-200/80">
-            <Award className="size-3.5 text-emerald-300" />
-            Demo outcome
+            <FileText className="size-3.5 text-emerald-300" />
+            Generated report
           </div>
           <p className="mt-2 text-lg font-semibold">
-            {analysis.leadSnapshot.companyName} is ready for sales action
+            {analysis.leadSnapshot.companyName} lead intelligence report
           </p>
           <p className="mt-1 line-clamp-2 text-xs leading-5 text-emerald-50/75">
-            {analysis.matchedCaseStudy.title} supports the recommended{" "}
-            {analysis.gtmRecommendation.recommendedMotion} motion.
+            Qualification, account research, FlytBase proof, GTM motion, response
+            sequence, and AE handoff are ready for review.
           </p>
         </div>
         <OutcomeStat label="Lead score" value={`${analysis.leadSnapshot.leadScore}/100`} />
         <OutcomeStat label="BANT total" value={`${bantTotal}/20`} />
-        <OutcomeStat label="Case study" value={analysis.matchedCaseStudy.caseStudyId.includes("enbw") ? "EnBW" : analysis.matchedCaseStudy.title} />
+        <OutcomeStat label="Case study" value={analysis.matchedCaseStudy.title} />
         <OutcomeStat
-          label={analysisStatus === "fallback" ? "Demo safety" : "Model"}
+          label="Generation"
           value={analysisStatus === "fallback" ? "Fallback" : "Gemini"}
-          detail={`${handoffQuestions} AE questions`}
+          detail={`${warnings} warning / missing-info items`}
         />
       </div>
     </section>
@@ -279,6 +278,11 @@ function renderAnalysisCockpit(
       <GtmMotionSection analysis={analysis} />
       <EmailSequenceSection steps={analysis.emailSequence.steps} strategy={analysis.emailSequence.strategy} />
       <AeHandoffSection analysis={analysis} />
+      <ReportGenerationSection
+        analysis={analysis}
+        analysisStatus={analysisStatus}
+        modelId={modelId}
+      />
       <AnalysisSignalsSection
         analysis={analysis}
         analysisStatus={analysisStatus}
@@ -358,7 +362,7 @@ function BantQualificationSection({
 }) {
   return (
     <section className="space-y-3">
-      <SectionLabel icon={<ShieldCheck />} title="BANT Qualification Cards" />
+      <SectionLabel icon={<ShieldCheck />} title="Sales Framework Qualification" />
       <div className="grid gap-3 xl:grid-cols-4">
         {getBantRows(qualification).map((row) => (
           <Card
@@ -410,7 +414,7 @@ function AccountResearchSection({ analysis }: { analysis: LeadAnalysis }) {
   return (
     <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
-        eyebrow="Account Research"
+        eyebrow="Public Account Research"
         icon={<BriefcaseBusiness />}
         title={accountResearch.companyOverview}
         action={<Badge tone="muted">{accountResearch.sources.length} sources</Badge>}
@@ -455,7 +459,7 @@ function CaseStudyMatchSection({ analysis }: { analysis: LeadAnalysis }) {
   return (
     <section className="border border-emerald-700/25 bg-card shadow-[0_12px_34px_rgba(12,35,29,0.08)]">
       <SectionHeader
-        eyebrow="Case Study Match"
+        eyebrow="FlytBase Case Study Match"
         icon={<SearchCheck />}
         title={matchedCaseStudy.title}
         action={<ConfidenceBadge value={matchedCaseStudy.confidence} />}
@@ -505,7 +509,7 @@ function GtmMotionSection({ analysis }: { analysis: LeadAnalysis }) {
   return (
     <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
-        eyebrow="GTM Motion Recommendation"
+        eyebrow="Go-To-Market Motion"
         icon={<Route />}
         title={gtmRecommendation.recommendedMotion}
         action={<Badge tone={priorityTone(gtmRecommendation.priority)}>{formatLabel(gtmRecommendation.priority)} priority</Badge>}
@@ -547,7 +551,7 @@ function EmailSequenceSection({
   return (
     <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
-        eyebrow="Adaptive Email Sequence"
+        eyebrow="Adaptive Response Sequence"
         icon={<Mail />}
         title={strategy}
         action={<Badge tone="muted">{steps.length} steps</Badge>}
@@ -643,6 +647,92 @@ function AeHandoffSection({ analysis }: { analysis: LeadAnalysis }) {
   );
 }
 
+function ReportGenerationSection({
+  analysis,
+  analysisStatus,
+  modelId,
+}: {
+  analysis: LeadAnalysis;
+  analysisStatus: AnalysisGenerationStatus;
+  modelId: string;
+}) {
+  const missingInfo = getMissingInfoRollup(analysis);
+  const sourceCount = collectUnique(
+    [...analysis.sources, ...analysis.accountResearch.sources].map(
+      (source) => `${source.title}-${source.sourceType}`,
+    ),
+  ).length;
+  const artifacts = [
+    {
+      label: "Lead intelligence report",
+      value: `${analysis.leadSnapshot.companyName} markdown brief`,
+      detail: "Snapshot, qualification, research, proof, GTM, email sequence, handoff, warnings, and sources.",
+    },
+    {
+      label: "AE summary",
+      value: analysis.aeHandoffSummary.gtmOwner,
+      detail: analysis.aeHandoffSummary.summary,
+    },
+    {
+      label: "Adaptive response sequence",
+      value: `${analysis.emailSequence.steps.length} emails`,
+      detail: analysis.emailSequence.strategy,
+    },
+    {
+      label: "Validation status",
+      value: analysisStatus === "fallback" ? "Fallback validated" : "AI schema validated",
+      detail: `${modelId} with ${formatPercent(analysis.confidence)} confidence`,
+    },
+  ] as const;
+
+  return (
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+      <SectionHeader
+        eyebrow="Report Generation"
+        icon={<Download />}
+        title="AE-ready export package"
+        action={<Badge tone="success">Ready</Badge>}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            {artifacts.map((artifact) => (
+              <div key={artifact.label} className="border bg-background p-3">
+                <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                  {artifact.label}
+                </p>
+                <p className="mt-1 break-words text-sm font-semibold">{artifact.value}</p>
+                <p className="mt-2 line-clamp-3 text-xs leading-5 text-muted-foreground">
+                  {artifact.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="border bg-background p-3">
+            <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+              Workflow actions
+            </p>
+            <div className="mt-3">
+              <AnalysisWorkflowActions analysis={analysis} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Metric label="Source coverage" value={`${sourceCount} sources attached`} />
+          <ListBlock
+            label="Warnings / missing info"
+            items={missingInfo}
+            icon={<AlertCircle />}
+            tone="warning"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AnalysisSignalsSection({
   analysis,
   analysisStatus,
@@ -660,7 +750,7 @@ function AnalysisSignalsSection({
   return (
     <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
-        eyebrow="Analysis Signals Debug Panel"
+        eyebrow="Analysis Signals + Validation"
         icon={<BarChart3 />}
         title="Validated structured output and source trace"
         action={
@@ -761,7 +851,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
                 </div>
                 <div className="mt-3 h-1.5 border bg-muted">
                   <div
-                    className="h-full bg-foreground transition-all"
+                    className="h-full bg-foreground transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]"
                     style={{ width: index === 0 ? "72%" : "18%" }}
                   />
                 </div>
@@ -839,10 +929,6 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
             this panel will show qualification, FlytBase proof, GTM motion, outreach,
             handoff notes, and the generation status.
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Metric label="Primary proof path" value="EnBW solar PV" />
-            <Metric label="Demo-safe mode" value="Fallback ready" />
-          </div>
         </div>
       </div>
     </section>

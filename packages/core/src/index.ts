@@ -21,11 +21,6 @@ export type QualificationSignal = {
   placeholder: string;
 };
 
-export type DashboardStat = {
-  label: string;
-  value: string;
-};
-
 export const leadInputFields = [
   {
     id: "rawEmail",
@@ -33,7 +28,7 @@ export const leadInputFields = [
     kind: "textarea",
     placeholder:
       "Paste the inbound email or web-form note, including the problem, context, and any timeline or scale hints.",
-    helper: "Required. Samples only fill this form and never determine the analysis output directly.",
+    helper: "Required. This is the primary evidence used for qualification and AE handoff.",
   },
   {
     id: "senderName",
@@ -87,18 +82,3 @@ export const qualificationSignals = [
     placeholder: "Pending recommended outreach angle",
   },
 ] as const satisfies readonly QualificationSignal[];
-
-export const dashboardStats = [
-  {
-    label: "Queue",
-    value: "0",
-  },
-  {
-    label: "SLA",
-    value: "--",
-  },
-  {
-    label: "Scored",
-    value: "0%",
-  },
-] as const satisfies readonly DashboardStat[];

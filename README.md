@@ -24,13 +24,13 @@ flyt-breif/
 
 ## Current Scope
 
-- Dashboard layout for an internal sales tool
-- Left-side inbound lead input panel
-- Right-side analysis result placeholder
+- Form-first lead intake workflow with a submitter thank-you state
+- Internal dashboard view after submission with full sales intelligence output
 - Shared lead and analysis schemas in `packages/core`
 - FlytBase case-study retrieval context in `packages/data`
 - Server-side AI analysis routes in `apps/web`
-- No auth flow, persistence, or production web research yet
+- Server-side public website research from the submitted company URL, with an adapter path for deeper web-search providers later
+- No auth flow or persistence yet
 
 ## Getting Started
 
@@ -47,24 +47,18 @@ Copy `apps/web/.env.example` to `apps/web/.env.local` and set either `GOOGLE_GEN
 
 AI calls are kept server-side. The initial health check lives at `GET /api/health-ai` and uses the Vercel AI SDK Google provider from a Next.js route handler. Lead analysis never calls Gemini from the browser.
 
-For demo safety, `POST /api/analyze-lead` returns a deterministic, schema-validated fallback analysis if Gemini is unavailable, misconfigured, or returns invalid structured output. The UI marks that run as `Fallback` and keeps the same copy/export workflow available.
+For workflow safety, `POST /api/analyze-lead` returns a deterministic, schema-validated fallback analysis if Gemini is unavailable, misconfigured, or returns invalid structured output. The UI marks that run as `Fallback` and keeps the same copy/export workflow available.
 
-Lead analysis uses research adapters from `packages/ai`. `RESEARCH_ADAPTER=demo` is the default and infers account context from the inbound email, company domain, industry, region, and use case without making web requests. `webResearchAdapter` is a placeholder for future Tavily, Exa, Serper, Firecrawl, or Google Custom Search integration.
+Lead analysis uses research adapters from `packages/ai`. The default `RESEARCH_ADAPTER=web` fetches public website context from the submitted company URL on the server, then labels broader account facts as unknown or inferred when no search provider is connected. Set `RESEARCH_ADAPTER=demo` only when you want inference-only research. The web adapter is ready for Tavily, Exa, Serper, Firecrawl, or Google Custom Search integration later.
 
-## Demo Script
-
-Best path for the hackathon demo:
+## Workflow Script
 
 1. Start the app with `pnpm run dev:web` and open [http://localhost:3001](http://localhost:3001).
-2. Click the `Solar operator` sample. It populates a HelioGrid Solar inbound lead with PV scale, budget, timeline, and autonomous drone dock signals.
-3. Click `Analyze Lead`.
-4. In the right panel, call out the model/status indicator. `Gemini` means the AI produced validated structured output; `Fallback` means the deterministic safety net kept the demo running.
-5. Show the lead snapshot and BANT cards. The expected demo path is a strong solar PV qualification score.
-6. Show the EnBW case-study match for solar PV inspections scaling from 150 MW toward 1 GW with autonomous drone docks.
-7. Show the GTM recommendation. The expected motion is `Direct AE` or `Hybrid`, depending on the generated qualification details.
-8. Show the AE handoff summary, especially why the lead matters, pain hypothesis, evidence, missing info, discovery questions, suggested agenda, and GTM owner.
-9. Use `Copy AE Summary`, `Copy Email Sequence`, and `Export Markdown` to close the sales workflow.
-10. If a validation or network error appears, use `Retry`. Gemini/provider failures should normally return a fallback analysis instead of an error state.
+2. Fill the inbound lead form with the raw email, sender name, sender email, company website, and region.
+3. Click `Submit Lead`. The intake panel becomes a thank-you state for the submitter.
+4. Review the internal dashboard: lead snapshot, sales framework qualification, public account research, FlytBase case-study match, GTM motion, adaptive response sequence, AE handoff, report generation, and analysis signals.
+5. Use `Copy AE Summary`, `Copy Email Sequence`, and `Export Markdown` to close the sales workflow.
+6. If a validation or network error appears, use `Retry`. Gemini/provider failures should normally return a fallback analysis instead of an error state.
 
 ## Data Model
 
@@ -81,4 +75,4 @@ MongoDB data is scoped to the `flytbreif` database. Shared collection names live
 
 The dashboard intentionally starts as the first screen. It is not a marketing site or landing page.
 
-The shell is built for repeated internal BDR use: compact navigation, structured lead intake, fast scanning, and a reserved analysis area for future scoring, persona fit, pain points, and suggested outreach.
+The shell is built for repeated internal BDR use: compact navigation, structured lead intake, fast scanning, public-account context, qualification, proof matching, suggested outreach, AE handoff, and report export.

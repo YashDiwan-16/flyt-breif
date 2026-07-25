@@ -8,16 +8,17 @@ import { Textarea } from "@flyt-breif/ui/components/textarea";
 import {
   AlertCircle,
   ArrowRight,
-  BadgeCheck,
-  FileText,
+  CheckCircle2,
+  ClipboardCheck,
   LoaderCircle,
   RotateCcw,
-  SunMedium,
+  Send,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
 type LeadInputPanelProps = {
   isAnalyzing: boolean;
+  mode?: "form" | "submitted";
   onAnalyzeError: (error: string, details?: readonly string[]) => void;
   onAnalyzeStart: () => void;
   onAnalyzeSuccess: (
@@ -26,8 +27,9 @@ type LeadInputPanelProps = {
     analysisStatus: AnalysisGenerationStatus,
     statusMessage?: string,
   ) => void;
-  onSampleLoaded: () => void;
-  retryRequestId: number;
+  onReset?: () => void;
+  retryRequestId?: number;
+  submittedAnalysis?: LeadAnalysis;
 };
 
 type AnalysisGenerationStatus = "ai" | "fallback";
@@ -53,74 +55,15 @@ const emptyLeadInput: LeadInput = {
   region: "",
 };
 
-const sampleLeads = [
-  {
-    label: "Solar operator",
-    leadInput: {
-      rawEmail:
-        "Hi FlytBase team, I lead operations for HelioGrid Solar. We manage a utility-scale PV portfolio that is expanding from roughly 150 MW toward 1 GW, and we have budget approved for an autonomous inspection pilot this quarter. We need repeatable thermal and visual inspections without sending crews across every field each week. We are evaluating autonomous drone docks and want to understand pilot scope, deployment requirements, and a path to scale if the first sites work.",
-      senderName: "Maya Reddy",
-      senderEmail: "maya.reddy@heliogrid.example",
-      companyWebsite: "https://heliogrid.example",
-      region: "Europe",
-    },
-  },
-  {
-    label: "Mining company",
-    leadInput: {
-      rawEmail:
-        "Hello, I manage site technology for Andes Quarry Group. Our mine inspection zones are large and some areas are difficult to access safely during shifts. We are looking for autonomous inspection coverage, alerts, and reporting that can support operations and safety reviews.",
-      senderName: "Carlos Mendez",
-      senderEmail: "carlos.mendez@andesquarry.example",
-      companyWebsite: "https://andesquarry.example",
-      region: "Latin America",
-    },
-  },
-  {
-    label: "Waste management",
-    leadInput: {
-      rawEmail:
-        "We operate regional waste facilities and need better recurring visibility for environmental monitoring, hazardous-condition checks, and faster escalation when a site team spots a risk. Can FlytBase support autonomous dock-based monitoring across multiple facilities?",
-      senderName: "Noor Al Mansoori",
-      senderEmail: "noor@uaewasteops.example",
-      companyWebsite: "https://uaewasteops.example",
-      region: "Middle East",
-    },
-  },
-  {
-    label: "Agriculture security",
-    leadInput: {
-      rawEmail:
-        "Hi, our plantation security team is exploring drone patrols for perimeter monitoring and faster response. We also need a way to connect incident logs with our ERP workflows so field teams can act without manually re-entering every event.",
-      senderName: "Anika Tan",
-      senderEmail: "anika.tan@plantationops.example",
-      companyWebsite: "https://plantationops.example",
-      region: "Asia Pacific",
-    },
-  },
-  {
-    label: "Wildfire agency",
-    leadInput: {
-      rawEmail:
-        "I am evaluating autonomous drone monitoring for wildfire detection across remote forest land. Thermal imaging and early alerts are important because our response teams need better situational awareness before dispatching crews.",
-      senderName: "Marek Novak",
-      senderEmail: "marek.novak@forestwatch.example",
-      companyWebsite: "https://forestwatch.example",
-      region: "Europe",
-    },
-  },
-] as const satisfies readonly {
-  label: string;
-  leadInput: LeadInput;
-}[];
-
 export function LeadInputPanel({
   isAnalyzing,
+  mode = "form",
   onAnalyzeError,
   onAnalyzeStart,
   onAnalyzeSuccess,
-  onSampleLoaded,
+  onReset,
   retryRequestId,
+  submittedAnalysis,
 }: LeadInputPanelProps) {
   const [formState, setFormState] = useState<LeadInput>(emptyLeadInput);
   const [fieldErrors, setFieldErrors] = useState<
@@ -130,7 +73,7 @@ export function LeadInputPanel({
   const isSubmitting = isAnalyzing;
 
   useEffect(() => {
-    if (retryRequestId > 0) {
+    if ((retryRequestId ?? 0) > 0) {
       void analyzeCurrentLead();
     }
   }, [retryRequestId]);
@@ -143,9 +86,8 @@ export function LeadInputPanel({
     setApiError(null);
 
     if (!formState.rawEmail.trim()) {
-      const error = "Paste the raw inbound email before analyzing this lead.";
+      const error = "Paste the raw inbound email before submitting this lead.";
       setFieldErrors({ rawEmail: error });
-      onAnalyzeError(error);
       return;
     }
 
@@ -206,18 +148,83 @@ export function LeadInputPanel({
     }
   }
 
-  function loadSample(sample: LeadInput) {
-    setFormState(sample);
-    setFieldErrors({});
-    setApiError(null);
-    onSampleLoaded();
-  }
-
   function resetForm() {
     setFormState(emptyLeadInput);
     setFieldErrors({});
     setApiError(null);
-    onSampleLoaded();
+    onReset?.();
+  }
+
+  if (mode === "submitted" && submittedAnalysis) {
+    return (
+      <section className="flex min-h-[640px] flex-col overflow-hidden border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
+        <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#fbfdf9] px-5">
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+              <CheckCircle2 className="size-3.5" />
+              Submission received
+            </div>
+            <h2 className="mt-1 text-sm font-semibold">Thank You</h2>
+            <p className="text-xs text-muted-foreground">
+              The internal dashboard now has the lead brief.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Submit another lead"
+            onClick={resetForm}
+          >
+            <RotateCcw />
+          </Button>
+        </div>
+
+        <div className="flex flex-1 flex-col justify-between p-5">
+          <div className="space-y-4">
+            <div className="border border-emerald-700/25 bg-emerald-500/10 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center border border-emerald-700/20 bg-emerald-600 text-white">
+                  <ClipboardCheck className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Thank you for submitting.</p>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Your lead has been analyzed. The BDR and AE view now shows the
+                    qualification, public account research, FlytBase case-study match,
+                    GTM motion, adaptive emails, AE handoff, and markdown report export.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <SubmittedMetric
+                label="Company"
+                value={submittedAnalysis.leadSnapshot.companyName}
+              />
+              <SubmittedMetric
+                label="Contact"
+                value={`${submittedAnalysis.leadSnapshot.contactName} - ${submittedAnalysis.leadSnapshot.contactRole}`}
+              />
+              <SubmittedMetric
+                label="Qualification"
+                value={formatHumanLabel(submittedAnalysis.leadSnapshot.qualificationLabel)}
+              />
+              <SubmittedMetric
+                label="Recommended motion"
+                value={submittedAnalysis.gtmRecommendation.recommendedMotion}
+              />
+            </div>
+          </div>
+
+          <Button type="button" size="lg" className="mt-6 w-full" onClick={resetForm}>
+            <Send />
+            Submit another lead
+          </Button>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -225,11 +232,13 @@ export function LeadInputPanel({
       <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#fbfdf9] px-5">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
-            <SunMedium className="size-3.5" />
+            <Send className="size-3.5" />
             Live lead intake
           </div>
           <h2 className="mt-1 text-sm font-semibold">Inbound Lead</h2>
-          <p className="text-xs text-muted-foreground">Raw signal in, AE-ready brief out</p>
+          <p className="text-xs text-muted-foreground">
+            Submit the inbound request for internal qualification
+          </p>
         </div>
         <Button
           type="button"
@@ -245,60 +254,6 @@ export function LeadInputPanel({
 
       <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
         <div className="space-y-4 p-5 lg:min-h-0 lg:flex-1 lg:overflow-auto">
-          <div className="border border-emerald-600/20 bg-emerald-500/10 p-3">
-            <div className="flex items-start gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center border border-emerald-700/20 bg-emerald-600 text-white">
-                <BadgeCheck className="size-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold">Recommended hackathon run</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Solar operator lead with PV scale, budget, pilot timing, and drone dock
-                  signals for the EnBW proof path.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <Label>Samples</Label>
-              <span className="text-[10px] uppercase tracking-normal text-muted-foreground">
-                Populate only
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {sampleLeads.map((sample, index) => {
-                const isPrimary = index === 0;
-
-                return (
-                  <Button
-                    key={sample.label}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={[
-                      "h-auto min-h-9 justify-start py-2",
-                      isPrimary
-                        ? "col-span-2 border-emerald-700/30 bg-emerald-500/10 text-emerald-950 hover:bg-emerald-500/15"
-                        : "",
-                    ].join(" ")}
-                    onClick={() => loadSample(sample.leadInput)}
-                    disabled={isSubmitting}
-                  >
-                    {isPrimary ? <SunMedium /> : <FileText />}
-                    <span className="min-w-0 flex-1 truncate text-left">{sample.label}</span>
-                    {isPrimary ? (
-                      <span className="border border-emerald-700/20 bg-white/70 px-1.5 py-0.5 text-[10px] uppercase tracking-normal text-emerald-800">
-                        Best demo
-                      </span>
-                    ) : null}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-
           {leadInputFields.map((field) => {
             const helper = "helper" in field ? field.helper : undefined;
             const error = fieldErrors[field.id];
@@ -394,22 +349,40 @@ export function LeadInputPanel({
             {isSubmitting ? (
               <>
                 <LoaderCircle className="animate-spin" />
-                Analyzing
+                Generating report
               </>
             ) : (
               <>
-                Analyze Lead
+                Submit Lead
                 <ArrowRight />
               </>
             )}
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Server-side AI with deterministic fallback for stage-safe demos.
+            Analysis runs server-side, validates structured output, and falls back
+            deterministically if the model is unavailable.
           </p>
         </div>
       </form>
     </section>
   );
+}
+
+function SubmittedMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 border bg-background p-3 shadow-[0_6px_18px_rgba(12,35,29,0.035)]">
+      <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function formatHumanLabel(value: string) {
+  return value
+    .split(/[-\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
 }
 
 function isAnalyzeLeadSuccessResponse(

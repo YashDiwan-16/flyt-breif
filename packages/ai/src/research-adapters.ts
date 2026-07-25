@@ -49,26 +49,82 @@ export const webResearchAdapter: ResearchAdapter = {
   name: "web",
   research: async (input) => {
     const demoResult = buildDemoResearch(input);
+    const websiteContext = await fetchPublicWebsiteContext(input.companyWebsite);
+    const inferredSources = demoResult.sources.filter(
+      (source) => source.kind !== "company-domain",
+    );
+
+    if (!websiteContext) {
+      return {
+        ...demoResult,
+        adapterName: "web",
+        sources: [
+          ...inferredSources,
+          {
+            title: "Submitted company website",
+            kind: "company-domain",
+            url: input.companyWebsite,
+            note:
+              "A public website fetch was attempted server-side, but no readable page context was returned.",
+          },
+          {
+            title: "Public search provider integration backlog",
+            kind: "public-web-placeholder",
+            note:
+              "TODO: Add Tavily, Exa, Serper, Firecrawl, or Google Custom Search for broader public account research.",
+          },
+        ],
+        warnings: [
+          "Public website fetch did not return readable account context; research fell back to inferred lead and domain signals.",
+          "Broader public account search is not connected yet, so company size, HQ, customers, funding, and market facts remain unverified unless present in the inbound email.",
+        ],
+        confidence: Math.min(demoResult.confidence, 0.35),
+      };
+    }
+
+    const publicSignals = collectUnique([
+      websiteContext.title ? `Public website title: ${websiteContext.title}.` : "",
+      websiteContext.description
+        ? `Public website description: ${websiteContext.description}.`
+        : "",
+      ...websiteContext.headings.map((heading) => `Public website heading: ${heading}.`),
+      websiteContext.textSample
+        ? `Public website text sample: ${websiteContext.textSample}.`
+        : "",
+    ]);
+    const websiteSummary =
+      websiteContext.description ||
+      websiteContext.title ||
+      websiteContext.headings[0] ||
+      "the submitted website returned readable public page text";
 
     return {
       ...demoResult,
       adapterName: "web",
+      companyOverview: `Public website signal: ${demoResult.companyName} has public website context indicating "${websiteSummary}". Additional account fit is inferred from the inbound email and submitted domain.`,
+      operatingContext: `${demoResult.operatingContext} Public website context was fetched from the submitted domain, but broader public search is not connected yet.`,
+      keySignals: collectUnique([...publicSignals, ...demoResult.keySignals]),
       sources: [
-        ...demoResult.sources,
+        ...inferredSources,
         {
-          title: "Public web research placeholder",
+          title: websiteContext.title || "Submitted company website",
+          kind: "company-domain",
+          url: websiteContext.url,
+          note:
+            "Fetched public website title, metadata, headings, and visible text server-side.",
+        },
+        {
+          title: "Public search provider integration backlog",
           kind: "public-web-placeholder",
           note:
-            "TODO: Replace with real public account research from Tavily, Exa, Serper, Firecrawl, or Google Custom Search.",
+            "TODO: Add Tavily, Exa, Serper, Firecrawl, or Google Custom Search for broader public account research.",
         },
       ],
       warnings: [
-        ...demoResult.warnings,
-        "webResearchAdapter is a placeholder and did not perform public web search.",
-        "TODO: Add search provider selection, result deduplication, source trust scoring, extraction, and citation capture.",
-        "TODO: Keep network research server-side and validate outputs before passing them to the model.",
+        "Public research is currently limited to the submitted company website plus inbound email evidence.",
+        "Broader public account search is not connected yet, so company size, HQ, customers, funding, and market facts remain unverified unless present in the inbound email.",
       ],
-      confidence: 0.2,
+      confidence: Math.min(0.72, demoResult.confidence + 0.17),
     };
   },
 };
@@ -107,7 +163,7 @@ function buildDemoResearch(input: ResearchAdapterRequest): ResearchAdapterResult
     industry,
     region,
     useCase,
-    companyOverview: `Inferred: ${companyName} appears to be a ${industry.toLowerCase()} account based on the inbound domain and lead signals. This is demo research only, not verified public research.`,
+    companyOverview: `Inferred: ${companyName} appears to be a ${industry.toLowerCase()} account based on the inbound domain and lead signals. This is inference-only research, not verified public research.`,
     operatingContext: `Inferred: The account likely needs ${useCase.toLowerCase()} in ${region}, with FlytBase relevance around autonomous drone operations, repeatable monitoring, and operational visibility.`,
     keySignals: [
       domainSignal,
@@ -131,7 +187,7 @@ function buildDemoResearch(input: ResearchAdapterRequest): ResearchAdapterResult
         title: "Inbound lead email",
         kind: "demo-inference",
         note:
-          "Demo adapter inferred context from the inbound email and normalized lead signals.",
+          "Inference adapter inferred context from the inbound email and normalized lead signals.",
       },
       {
         title: "Company domain",
@@ -142,11 +198,149 @@ function buildDemoResearch(input: ResearchAdapterRequest): ResearchAdapterResult
       },
     ],
     warnings: [
-      "Demo research adapter did not perform public web search.",
+      "Inference adapter did not perform public web search.",
       "All account research fields should be labeled as inferred unless supported by the inbound email.",
     ],
     confidence,
   };
+}
+
+type PublicWebsiteContext = {
+  description: string;
+  headings: readonly string[];
+  textSample: string;
+  title: string;
+  url: string;
+};
+
+const PUBLIC_WEBSITE_TIMEOUT_MS = 4500;
+
+async function fetchPublicWebsiteContext(
+  companyWebsite?: string,
+): Promise<PublicWebsiteContext | null> {
+  const url = normalizeWebsiteUrl(companyWebsite);
+
+  if (!url) {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PUBLIC_WEBSITE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "FlytBDR-Copilot/0.1 (+server-side-account-research)",
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (contentType && !contentType.toLowerCase().includes("html")) {
+      return null;
+    }
+
+    const html = await response.text();
+    const title = extractTagContent(html, "title");
+    const description = extractMetaDescription(html);
+    const headings = extractHeadings(html).slice(0, 8);
+    const textSample = extractReadableText(html).slice(0, 700);
+
+    if (!title && !description && headings.length === 0 && !textSample) {
+      return null;
+    }
+
+    return {
+      description,
+      headings,
+      textSample,
+      title,
+      url: response.url || url,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeWebsiteUrl(value?: string) {
+  const trimmedValue = value?.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmedValue);
+
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractTagContent(html: string, tagName: string) {
+  const match = html.match(
+    new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i"),
+  );
+
+  return match?.[1] ? cleanHtmlText(match[1]) : "";
+}
+
+function extractMetaDescription(html: string) {
+  const directMatch =
+    html.match(
+      /<meta\s+[^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+    ) ??
+    html.match(
+      /<meta\s+[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*>/i,
+    );
+
+  return directMatch?.[1] ? cleanHtmlText(directMatch[1]) : "";
+}
+
+function extractHeadings(html: string) {
+  return [...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)]
+    .map((match) => cleanHtmlText(match[1] ?? ""))
+    .filter(Boolean);
+}
+
+function extractReadableText(html: string) {
+  return cleanHtmlText(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  );
+}
+
+function cleanHtmlText(value: string) {
+  return decodeHtmlEntities(value).replace(/\s+/g, " ").trim();
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function collectUnique(items: readonly string[]) {
+  return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
 function getIndustryProfile(industry: string, useCase: string) {
@@ -282,7 +476,7 @@ function getIndustryProfile(industry: string, useCase: string) {
 
   return {
     keySignals: [
-      "The inbound lead appears operationally relevant, but public account context is unavailable in demo mode.",
+      "The inbound lead appears operationally relevant, but public account context is unavailable in inference-only mode.",
       "Discovery should clarify operational pain, site scale, buying authority, budget range, and timeline.",
     ],
     buyingCommittee: [

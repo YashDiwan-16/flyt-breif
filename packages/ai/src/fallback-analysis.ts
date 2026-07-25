@@ -90,8 +90,8 @@ export function buildDeterministicLeadAnalysis({
   const contactFirstName = getFirstName(leadInput.senderName);
   const droneOperation = getDroneOperation(parsedLead);
   const warnings = [
-    "Gemini analysis was unavailable, so FlytBDR returned a deterministic fallback analysis for demo continuity.",
-    "Fallback account research is inferred from inbound lead fields and demo research context, not verified public web research.",
+    "Gemini analysis was unavailable, so FlytBDR returned a deterministic fallback analysis to keep the intake workflow available.",
+    "Fallback account research is inferred from inbound lead fields and adapter context, not verified broader public web research.",
     ...researchContext.warnings,
     ...(failureReason ? [`AI failure captured by server: ${failureReason}`] : []),
   ];
@@ -128,8 +128,8 @@ export function buildDeterministicLeadAnalysis({
     qualification,
     accountResearch: {
       companyOverview: researchContext.companyOverview,
-      companySize: "Unknown - not provided by inbound email or demo research.",
-      headquarters: "Unknown - not provided by inbound email or demo research.",
+      companySize: "Unknown - not provided by inbound email or adapter research.",
+      headquarters: "Unknown - not provided by inbound email or adapter research.",
       industry: researchContext.industry,
       keySignals: [...researchContext.keySignals],
       likelyBuyingCommittee: [...researchContext.likelyBuyingCommittee],
