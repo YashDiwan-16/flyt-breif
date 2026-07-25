@@ -1,89 +1,51 @@
-# flyt-breif
+# FlytBDR Copilot
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, TRPC, and more.
+Internal sales intelligence dashboard for the FlytBase Inbound BDR challenge.
 
-## Features
+This repository is set up as a TypeScript monorepo. The initial product surface is a Next.js dashboard shell with no backend logic wired in yet.
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Hono** - Lightweight, performant server framework
-- **tRPC** - End-to-end type-safe APIs
-- **Node.js** - Runtime environment
-- **Mongoose** - TypeScript-first ORM
-- **MongoDB** - Database engine
-- **Authentication** - Better-Auth
-- **Turborepo** - Optimized monorepo build system
+## Apps and Packages
+
+```text
+flyt-breif/
+├── apps/
+│   ├── web/          # Next.js frontend for FlytBDR Copilot
+│   └── server/       # Existing backend scaffold, not used by the shell yet
+├── packages/
+│   ├── core/         # Shared FlytBDR domain types and constants
+│   ├── ui/           # Shared UI primitives and Tailwind theme
+│   ├── api/          # Existing API scaffold
+│   ├── auth/         # Existing auth scaffold
+│   ├── db/           # Existing database scaffold
+│   └── env/          # Existing environment validation helpers
+```
+
+## Current Scope
+
+- Dashboard layout for an internal sales tool
+- Left-side inbound lead input panel
+- Right-side analysis result placeholder
+- Shared lead and analysis metadata in `packages/core`
+- No backend calls, auth flow, persistence, or scoring logic yet
 
 ## Getting Started
 
-First, install the dependencies:
-
 ```bash
 pnpm install
+pnpm run dev:web
 ```
 
-## Database Setup
+Open [http://localhost:3001](http://localhost:3001).
 
-This project uses MongoDB with Mongoose.
+## Scripts
 
-1. Make sure you have MongoDB set up.
-2. Update your `apps/server/.env` file with your MongoDB connection URI.
+- `pnpm run dev` - start all dev tasks through Turborepo
+- `pnpm run dev:web` - start only the Next.js web app
+- `pnpm run build` - build the workspace
+- `pnpm run check-types` - run TypeScript checks
 
-Then, run the development server:
+## Frontend Notes
 
-```bash
-pnpm run dev
-```
+The dashboard intentionally starts as the first screen. It is not a marketing site or landing page.
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
-
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
-
-```tsx
-import { Button } from "@flyt-breif/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Project Structure
-
-```
-flyt-breif/
-├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Backend API (Hono, TRPC)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
+The shell is built for repeated internal BDR use: compact navigation, structured lead intake, fast scanning, and a reserved analysis area for future scoring, persona fit, pain points, and suggested outreach.

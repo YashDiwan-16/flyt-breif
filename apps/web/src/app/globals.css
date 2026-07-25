@@ -1,0 +1,9 @@
+@import "@flyt-breif/ui/globals.css";
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-width: 320px;
+}

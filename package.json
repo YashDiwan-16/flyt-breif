@@ -24,5 +24,11 @@
     "turbo": "^2.10.2",
     "typescript": "catalog:"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.23",
+      "sharp": "^0.35.0"
+    }
+  },
   "packageManager": "pnpm@10.6.2"
 }
