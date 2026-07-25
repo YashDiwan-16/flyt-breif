@@ -69,10 +69,10 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
   const summaryCards = getSummaryCards(state);
 
   return (
-    <section className="flex min-h-[680px] flex-1 flex-col overflow-hidden border bg-background shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
-      <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#fbfdf9] px-5 py-2">
+    <section className="flex min-h-[680px] flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-[0_16px_40px_rgba(0,0,0,0.18)] lg:min-h-0">
+      <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#242421] px-5 py-2">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-[#7db7ff]">
             <Radar className="size-3.5" />
             Sales intelligence cockpit
           </div>
@@ -159,7 +159,7 @@ function ModelStatusIndicator({
       <Badge tone={isFallback ? "warning" : "success"}>
         {isFallback ? "Fallback" : "Gemini"}
       </Badge>
-      <span className="max-w-44 truncate border bg-background px-2 py-1 font-mono text-[10px] text-muted-foreground">
+      <span className="max-w-44 truncate rounded-md border bg-background px-2 py-1 font-mono text-[10px] text-muted-foreground">
         {modelId}
       </span>
       {statusMessage ? (
@@ -213,17 +213,17 @@ function ReportOverviewRibbon({
   const warnings = getMissingInfoRollup(analysis).length;
 
   return (
-    <section className="mt-3 border bg-[#172b24] p-4 text-[#f4fbf4] shadow-[0_18px_45px_rgba(12,35,29,0.16)]">
+    <section className="mt-3 rounded-xl border border-[#1f5d9c]/45 bg-[#062d5f] p-4 text-[#f4f8ff] shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
       <div className="grid gap-3 xl:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-200/80">
-            <FileText className="size-3.5 text-emerald-300" />
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-[#b8d7ff]">
+            <FileText className="size-3.5 text-[#7db7ff]" />
             Generated report
           </div>
           <p className="mt-2 text-lg font-semibold">
             {analysis.leadSnapshot.companyName} lead intelligence report
           </p>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-emerald-50/75">
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#dcecff]/75">
             Qualification, account research, FlytBase proof, GTM motion, response
             sequence, and AE handoff are ready for review.
           </p>
@@ -251,10 +251,10 @@ function OutcomeStat({
   value: string;
 }) {
   return (
-    <div className="min-w-0 border border-white/15 bg-white/10 p-3">
-      <p className="text-[10px] uppercase tracking-normal text-emerald-100/70">{label}</p>
+    <div className="min-w-0 rounded-lg border border-white/15 bg-white/10 p-3">
+      <p className="text-[10px] uppercase tracking-normal text-[#dcecff]/70">{label}</p>
       <p className="mt-1 truncate text-base font-semibold text-white">{value}</p>
-      {detail ? <p className="mt-1 truncate text-xs text-emerald-50/70">{detail}</p> : null}
+      {detail ? <p className="mt-1 truncate text-xs text-[#dcecff]/70">{detail}</p> : null}
     </div>
   );
 }
@@ -297,7 +297,7 @@ function LeadSnapshotSection({ analysis }: { analysis: LeadAnalysis }) {
   const { leadSnapshot } = analysis;
 
   return (
-    <section className="border border-emerald-700/20 bg-card shadow-[0_12px_34px_rgba(12,35,29,0.08)]">
+    <section className="rounded-xl border border-[#1f5d9c]/35 bg-card shadow-[0_12px_34px_rgba(0,0,0,0.16)]">
       <SectionHeader
         eyebrow="Lead Snapshot"
         icon={<Target />}
@@ -314,14 +314,14 @@ function LeadSnapshotSection({ analysis }: { analysis: LeadAnalysis }) {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="border bg-background p-3">
+            <div className="rounded-lg border bg-background p-3">
               <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
                 Contact
               </p>
               <p className="mt-1 text-sm font-semibold">{leadSnapshot.contactName}</p>
               <p className="mt-1 text-xs text-muted-foreground">{leadSnapshot.contactRole}</p>
             </div>
-            <div className="border bg-background p-3">
+            <div className="rounded-lg border bg-background p-3">
               <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
                 Use Case
               </p>
@@ -331,7 +331,7 @@ function LeadSnapshotSection({ analysis }: { analysis: LeadAnalysis }) {
           </div>
         </div>
 
-        <div className="border bg-background p-3">
+        <div className="rounded-lg border bg-background p-3">
           <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
             Sales posture
           </p>
@@ -369,7 +369,7 @@ function BantQualificationSection({
             key={row.label}
             size="sm"
             className={[
-              "min-h-52 border bg-card shadow-[0_10px_28px_rgba(12,35,29,0.06)]",
+              "min-h-52 border bg-card shadow-[0_10px_28px_rgba(0,0,0,0.14)]",
               row.item.score >= 4
                 ? "border-emerald-600/25"
                 : row.item.score >= 2
@@ -412,7 +412,7 @@ function AccountResearchSection({ analysis }: { analysis: LeadAnalysis }) {
   const { accountResearch } = analysis;
 
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Public Account Research"
         icon={<BriefcaseBusiness />}
@@ -457,7 +457,7 @@ function CaseStudyMatchSection({ analysis }: { analysis: LeadAnalysis }) {
   const { matchedCaseStudy } = analysis;
 
   return (
-    <section className="border border-emerald-700/25 bg-card shadow-[0_12px_34px_rgba(12,35,29,0.08)]">
+    <section className="rounded-xl border border-[#1f5d9c]/35 bg-card shadow-[0_12px_34px_rgba(0,0,0,0.16)]">
       <SectionHeader
         eyebrow="FlytBase Case Study Match"
         icon={<SearchCheck />}
@@ -493,7 +493,7 @@ function CaseStudyMatchSection({ analysis }: { analysis: LeadAnalysis }) {
           href={matchedCaseStudy.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 border px-2 py-1.5 text-xs font-medium hover:bg-muted"
+          className="inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98]"
         >
           Open case study
           <ExternalLink className="size-3" />
@@ -507,7 +507,7 @@ function GtmMotionSection({ analysis }: { analysis: LeadAnalysis }) {
   const { gtmRecommendation } = analysis;
 
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Go-To-Market Motion"
         icon={<Route />}
@@ -549,7 +549,7 @@ function EmailSequenceSection({
   strategy: string;
 }) {
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Adaptive Response Sequence"
         icon={<Mail />}
@@ -558,7 +558,7 @@ function EmailSequenceSection({
       />
       <div className="grid gap-3 p-4 xl:grid-cols-3">
         {steps.map((step) => (
-          <div key={`${step.step}-${step.subject}`} className="border bg-background p-3">
+          <div key={`${step.step}-${step.subject}`} className="rounded-lg border bg-background p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
@@ -592,7 +592,7 @@ function AeHandoffSection({ analysis }: { analysis: LeadAnalysis }) {
   const { aeHandoffSummary } = analysis;
 
   return (
-    <section className="border border-emerald-700/25 bg-card shadow-[0_14px_38px_rgba(12,35,29,0.09)]">
+    <section className="rounded-xl border border-[#1f5d9c]/35 bg-card shadow-[0_14px_38px_rgba(0,0,0,0.16)]">
       <SectionHeader
         eyebrow="AE Handoff Summary"
         icon={<ClipboardList />}
@@ -686,7 +686,7 @@ function ReportGenerationSection({
   ] as const;
 
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Report Generation"
         icon={<Download />}
@@ -697,7 +697,7 @@ function ReportGenerationSection({
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             {artifacts.map((artifact) => (
-              <div key={artifact.label} className="border bg-background p-3">
+              <div key={artifact.label} className="rounded-lg border bg-background p-3">
                 <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
                   {artifact.label}
                 </p>
@@ -709,7 +709,7 @@ function ReportGenerationSection({
             ))}
           </div>
 
-          <div className="border bg-background p-3">
+          <div className="rounded-lg border bg-background p-3">
             <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
               Workflow actions
             </p>
@@ -748,7 +748,7 @@ function AnalysisSignalsSection({
   const isFallback = analysisStatus === "fallback";
 
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Analysis Signals + Validation"
         icon={<BarChart3 />}
@@ -798,7 +798,7 @@ function AnalysisSignalsSection({
             </p>
             <div className="mt-2 space-y-2">
               {analysis.sources.map((source) => (
-                <div key={`${source.title}-${source.sourceType}`} className="border bg-background p-2">
+                <div key={`${source.title}-${source.sourceType}`} className="rounded-lg border bg-background p-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-medium">{source.title}</p>
                     <Badge tone="muted">{source.sourceType}</Badge>
@@ -830,7 +830,7 @@ function AnalysisSignalsSection({
 function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) {
   if (state.status === "loading") {
     return (
-      <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+      <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
         <SectionHeader
           eyebrow="Loading Pipeline"
           icon={<LoaderCircle className="animate-spin" />}
@@ -840,7 +840,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
         <div className="grid gap-4 p-4 xl:grid-cols-[1fr_320px]">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {loadingPipeline.map((step, index) => (
-              <div key={step} className="border bg-background p-3">
+              <div key={step} className="rounded-lg border bg-background p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-medium">{step}</p>
                   {index === 0 ? (
@@ -858,7 +858,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
               </div>
             ))}
           </div>
-          <div className="border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4">
             <p className="text-sm font-semibold">Pipeline running</p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               FlytBDR is validating the lead, preparing account context, scoring BANT,
@@ -872,7 +872,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
 
   if (state.status === "error") {
     return (
-      <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+      <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
         <SectionHeader
           eyebrow="Analysis Error"
           icon={<AlertCircle />}
@@ -888,7 +888,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
           }
         />
         <div className="p-4">
-          <div className="border border-destructive/30 bg-destructive/5 p-4">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
             <p className="text-sm font-semibold">{state.error}</p>
             {state.details && state.details.length > 0 ? (
               <div className="mt-3 space-y-1 text-xs text-muted-foreground">
@@ -904,7 +904,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
   }
 
   return (
-    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
+    <section className="rounded-xl border bg-card shadow-[0_12px_34px_rgba(0,0,0,0.14)]">
       <SectionHeader
         eyebrow="Sales Cockpit"
         icon={<Sparkles />}
@@ -914,7 +914,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
       <div className="grid gap-4 p-4 xl:grid-cols-[1fr_320px]">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {loadingPipeline.map((step) => (
-            <div key={step} className="border bg-background p-3">
+            <div key={step} className="rounded-lg border bg-background p-3">
               <div className="flex items-center gap-2">
                 <CircleDashed className="size-4 text-muted-foreground" />
                 <p className="text-xs font-medium">{step}</p>
@@ -922,7 +922,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
             </div>
           ))}
         </div>
-        <div className="space-y-3 border bg-background p-4">
+        <div className="space-y-3 rounded-lg border bg-background p-4">
           <p className="text-sm font-semibold">No analysis yet</p>
           <p className="text-xs leading-5 text-muted-foreground">
             The cockpit is waiting for a validated lead run. When analysis completes,
@@ -947,7 +947,7 @@ function SectionHeader({
   title: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b bg-[#fbfdf9] px-4 py-3">
+    <div className="flex items-start justify-between gap-4 border-b bg-[#242421] px-4 py-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
           <span className="[&_svg]:size-3.5">{icon}</span>
@@ -971,7 +971,7 @@ function SectionLabel({ icon, title }: { icon: React.ReactNode; title: string })
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 border bg-background p-3 shadow-[0_6px_18px_rgba(12,35,29,0.035)]">
+    <div className="min-w-0 rounded-lg border bg-background p-3 shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
       <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
       <p className="mt-1 break-words text-sm font-semibold">{value}</p>
     </div>
@@ -1096,7 +1096,7 @@ function ScoreBar({ max, value }: { max: number; value: number }) {
   const width = `${Math.max(0, Math.min(100, (value / max) * 100))}%`;
 
   return (
-    <div className="h-2.5 border bg-muted">
+    <div className="h-2.5 overflow-hidden rounded-full border bg-muted">
       <div className={["h-full", scoreBarClassName(value)].join(" ")} style={{ width }} />
     </div>
   );
@@ -1124,17 +1124,17 @@ function getBantTotal(qualification: BANTQualification) {
 function summaryCardClassName(index: number, status: AnalysisPanelState["status"]) {
   if (status === "success") {
     if (index === 0) {
-      return "border-emerald-700/25 bg-emerald-500/10 shadow-[0_10px_28px_rgba(12,35,29,0.06)]";
+      return "border-[#1f5d9c]/45 bg-[#0b4f9c]/20 shadow-[0_10px_28px_rgba(0,0,0,0.14)]";
     }
 
     if (index === 1) {
-      return "border-amber-700/25 bg-amber-500/10 shadow-[0_10px_28px_rgba(83,58,14,0.05)]";
+      return "border-amber-600/30 bg-amber-500/10 shadow-[0_10px_28px_rgba(0,0,0,0.12)]";
     }
 
-    return "border-sky-700/20 bg-sky-500/10 shadow-[0_10px_28px_rgba(14,57,83,0.05)]";
+    return "border-sky-600/25 bg-sky-500/10 shadow-[0_10px_28px_rgba(0,0,0,0.12)]";
   }
 
-  return "border-border bg-card shadow-[0_8px_24px_rgba(12,35,29,0.04)]";
+  return "border-border bg-card shadow-[0_8px_24px_rgba(0,0,0,0.12)]";
 }
 
 function scoreBarClassName(score: number) {
@@ -1572,9 +1572,9 @@ function badgeToneClassName(tone: BadgeTone) {
     case "strong":
       return "border-foreground bg-foreground text-background";
     case "success":
-      return "border-emerald-600/30 bg-emerald-500/10 text-emerald-700";
+      return "border-emerald-400/30 bg-emerald-500/10 text-emerald-200";
     case "warning":
-      return "border-amber-600/30 bg-amber-500/10 text-amber-700";
+      return "border-amber-400/30 bg-amber-500/10 text-amber-200";
     case "danger":
       return "border-destructive/30 bg-destructive/10 text-destructive";
     case "muted":

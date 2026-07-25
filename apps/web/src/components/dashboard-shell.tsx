@@ -15,7 +15,7 @@ export function DashboardShell() {
   return (
     <main className="flex min-h-svh bg-background text-foreground lg:h-svh lg:min-h-[760px]">
       <nav className="hidden w-[72px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar py-3 text-sidebar-foreground lg:flex">
-        <div className="mb-6 flex size-10 items-center justify-center border border-sidebar-border bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+        <div className="mb-6 flex size-10 items-center justify-center rounded-[12px] border border-sidebar-border bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
           FB
         </div>
         <div className="flex flex-1 flex-col gap-2">
@@ -35,10 +35,10 @@ export function DashboardShell() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex min-h-[84px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-card px-4 py-3 shadow-[0_1px_0_rgba(11,37,31,0.04)] md:px-6">
+        <header className="flex min-h-[84px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#242421] px-4 py-3 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] md:px-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 border border-emerald-600/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal text-emerald-800">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#1f5d9c]/45 bg-[#062d5f] px-2 py-0.5 text-[10px] font-medium uppercase tracking-normal text-[#b8d7ff]">
                 <ShieldCheck className="size-3" />
                 Internal cockpit
               </span>
@@ -56,11 +56,11 @@ export function DashboardShell() {
             </p>
           </div>
           <div className="hidden flex-wrap items-center justify-end gap-2 md:flex">
-            <div className="inline-flex items-center gap-2 border bg-background px-3 py-2 text-xs font-medium shadow-[0_8px_24px_rgba(12,35,29,0.05)]">
+            <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs font-medium shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
               <FileText className="size-3.5 text-muted-foreground" />
               Lead report workflow
             </div>
-            <div className="inline-flex items-center gap-2 border bg-background px-3 py-2 text-xs font-medium shadow-[0_8px_24px_rgba(12,35,29,0.05)]">
+            <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs font-medium shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
               <Database className="size-3.5 text-muted-foreground" />
               flytbreif workspace
             </div>

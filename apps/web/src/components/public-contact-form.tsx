@@ -1,6 +1,10 @@
 "use client";
 
-import { leadInputFields, type LeadInput } from "@flyt-breif/core";
+import {
+  leadInputFields,
+  type LeadInput,
+  type LeadInputField,
+} from "@flyt-breif/core";
 import { Button } from "@flyt-breif/ui/components/button";
 import { Input } from "@flyt-breif/ui/components/input";
 import { Label } from "@flyt-breif/ui/components/label";
@@ -8,9 +12,9 @@ import { Textarea } from "@flyt-breif/ui/components/textarea";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
+  Drone,
   LoaderCircle,
-  MessageSquareText,
-  Send,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -28,6 +32,50 @@ const emptyLeadInput: LeadInput = {
   region: "",
 };
 
+const publicFieldOrder = [
+  "senderName",
+  "senderEmail",
+  "companyWebsite",
+  "region",
+  "rawEmail",
+] as const satisfies readonly (keyof LeadInput)[];
+
+const publicFieldCopy: Record<
+  keyof LeadInput,
+  {
+    label: string;
+    placeholder: string;
+  }
+> = {
+  rawEmail: {
+    label: "What are you looking to solve?",
+    placeholder:
+      "e.g. remote inspection of pipeline assets across 3 sites",
+  },
+  senderName: {
+    label: "Full name",
+    placeholder: "Jordan Lee",
+  },
+  senderEmail: {
+    label: "Work email",
+    placeholder: "jordan@company.co",
+  },
+  companyWebsite: {
+    label: "Company website",
+    placeholder: "https://company.co",
+  },
+  region: {
+    label: "Region",
+    placeholder: "Select region",
+  },
+};
+
+const formControlClassName =
+  "h-[72px] rounded-[14px] border-[#45443f] bg-[#292927] px-6 text-2xl font-semibold text-[#f7f6f2] shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] placeholder:text-[#777672] focus-visible:border-[#6ca8ff] focus-visible:ring-2 focus-visible:ring-[#0b4f9c]/45 disabled:bg-[#242421] disabled:opacity-60 sm:h-[86px] sm:px-7 sm:text-[34px] md:text-[38px]";
+
+const labelClassName =
+  "text-[21px] font-semibold leading-none text-[#c9c7c1] sm:text-[28px]";
+
 export function PublicContactForm() {
   const [formState, setFormState] = useState<LeadInput>(emptyLeadInput);
   const [fieldErrors, setFieldErrors] = useState<
@@ -44,8 +92,12 @@ export function PublicContactForm() {
       return;
     }
 
-    if (!formState.rawEmail.trim()) {
-      setFieldErrors({ rawEmail: "Tell us what you need help with." });
+    const normalizedFormState = normalizeLeadInput(formState);
+    const nextErrors = validateLeadInput(normalizedFormState);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFormState(normalizedFormState);
+      setFieldErrors(nextErrors);
       return;
     }
 
@@ -55,7 +107,7 @@ export function PublicContactForm() {
 
     try {
       const response = await fetch("/api/analyze-lead", {
-        body: JSON.stringify(formState),
+        body: JSON.stringify(normalizedFormState),
         headers: {
           "Content-Type": "application/json",
         },
@@ -88,184 +140,193 @@ export function PublicContactForm() {
       [fieldId]: value,
     }));
 
-    if (fieldId === "rawEmail" && value.trim()) {
+    if (value.trim()) {
       setFieldErrors((current) => ({
         ...current,
-        rawEmail: undefined,
+        [fieldId]: undefined,
       }));
     }
   }
 
   return (
-    <main className="min-h-svh bg-background text-foreground">
-      <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-4 py-5 md:px-6">
-        <header className="flex items-center justify-between gap-3 border-b pb-4">
-          <div>
-            <div className="inline-flex items-center gap-2 border border-emerald-600/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-normal text-emerald-800">
-              <MessageSquareText className="size-3.5" />
-              Contact FlytBase
-            </div>
-            <h1 className="mt-2 text-xl font-semibold md:text-3xl">
-              Tell us about your drone automation need
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Share your request and a FlytBase sales specialist will review the account,
-              operational use case, deployment fit, and next best step.
-            </p>
-          </div>
+    <main className="min-h-svh bg-[#292927] text-[#f7f6f2]">
+      <div className="mx-auto flex min-h-svh w-full max-w-[1024px] flex-col px-5 py-6 sm:px-8 md:py-10">
+        <div className="flex justify-end">
           <Link
             href="/admin"
-            className="hidden h-7 shrink-0 items-center justify-center border bg-background px-2.5 text-xs font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98] sm:inline-flex"
+            className="inline-flex h-9 items-center justify-center rounded-full border border-[#45443f] bg-[#242421] px-4 text-xs font-semibold text-[#b8b6b0] transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-[#5a5851] hover:text-white active:scale-[0.98]"
           >
             Admin
           </Link>
-        </header>
+        </div>
 
-        <div className="grid flex-1 items-start gap-4 py-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)]">
-            {isSubmitted ? (
-              <ThankYouState />
-            ) : (
-              <form onSubmit={handleSubmit} noValidate>
-                <div className="space-y-4 p-5">
-                  {leadInputFields.map((field) => {
-                    const helper = getPublicHelper(field.id);
-                    const error = fieldErrors[field.id];
+        <section className="mx-auto flex w-full max-w-[876px] flex-1 flex-col justify-center py-8">
+          {isSubmitted ? (
+            <ThankYouState />
+          ) : (
+            <>
+              <header className="text-center">
+                <div className="mx-auto flex size-24 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
+                  <Drone className="size-12" strokeWidth={2.5} />
+                </div>
+                <h1 className="mt-9 text-4xl font-bold leading-none tracking-normal text-[#faf9f6] sm:text-[44px]">
+                  Talk to our team
+                </h1>
+                <p className="mt-5 text-2xl font-semibold leading-snug text-[#c9c7c1] sm:text-[31px]">
+                  Tell us about your drone ops - we&apos;ll follow up shortly.
+                </p>
+              </header>
+
+              <form className="mt-16" onSubmit={handleSubmit} noValidate>
+                <div className="grid gap-x-7 gap-y-9 md:grid-cols-2">
+                  {publicFieldOrder.map((fieldId) => {
+                    const field = getLeadInputField(fieldId);
+                    const copy = publicFieldCopy[fieldId];
+                    const helper = getPublicHelper(fieldId);
+                    const error = fieldErrors[fieldId];
                     const describedBy = [
-                      helper ? `${field.id}-helper` : undefined,
-                      error ? `${field.id}-error` : undefined,
+                      helper ? `${fieldId}-helper` : undefined,
+                      error ? `${fieldId}-error` : undefined,
                     ]
                       .filter(Boolean)
                       .join(" ");
 
+                    if (!field) {
+                      return null;
+                    }
+
                     return (
-                      <div key={field.id} className="space-y-2">
-                        <Label htmlFor={field.id}>{field.label}</Label>
+                      <div
+                        key={fieldId}
+                        className={[
+                          "space-y-3",
+                          fieldId === "rawEmail" ? "md:col-span-2" : "",
+                        ].join(" ")}
+                      >
+                        <Label htmlFor={fieldId} className={labelClassName}>
+                          {copy.label}
+                        </Label>
                         {field.kind === "textarea" ? (
                           <Textarea
-                            id={field.id}
-                            name={field.id}
-                            placeholder="Tell us about your sites, inspection or monitoring need, urgency, scale, and what you want to automate."
-                            rows={10}
-                            value={formState[field.id]}
-                            onChange={(event) => updateField(field.id, event.target.value)}
+                            id={fieldId}
+                            name={fieldId}
+                            placeholder={copy.placeholder}
+                            rows={5}
+                            value={formState[fieldId]}
+                            onChange={(event) =>
+                              updateField(fieldId, event.target.value)
+                            }
                             aria-describedby={describedBy || undefined}
                             aria-invalid={Boolean(error)}
-                            className="min-h-52 resize-y"
+                            className={`${formControlClassName} min-h-[168px] resize-y py-6 leading-tight`}
                             disabled={isSubmitting}
                             required
                           />
                         ) : field.kind === "select" ? (
-                          <select
-                            id={field.id}
-                            name={field.id}
-                            value={formState[field.id]}
-                            onChange={(event) => updateField(field.id, event.target.value)}
-                            aria-describedby={describedBy || undefined}
-                            aria-invalid={Boolean(error)}
-                            className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
-                            disabled={isSubmitting}
-                            required
-                          >
-                            <option value="" disabled>
-                              Select one
-                            </option>
-                            {field.options?.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
+                          <div className="relative">
+                            <select
+                              id={fieldId}
+                              name={fieldId}
+                              value={formState[fieldId]}
+                              onChange={(event) =>
+                                updateField(fieldId, event.target.value)
+                              }
+                              aria-describedby={describedBy || undefined}
+                              aria-invalid={Boolean(error)}
+                              className={`${formControlClassName} appearance-none pr-14 outline-none`}
+                              disabled={isSubmitting}
+                              required
+                            >
+                              <option value="" disabled>
+                                {copy.placeholder}
                               </option>
-                            ))}
-                          </select>
+                              {field.options?.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-5 top-1/2 size-7 -translate-y-1/2 text-[#f7f6f2]" />
+                          </div>
                         ) : (
                           <Input
-                            id={field.id}
-                            name={field.id}
+                            id={fieldId}
+                            name={fieldId}
                             type={field.kind}
-                            placeholder={field.placeholder}
-                            value={formState[field.id]}
-                            onChange={(event) => updateField(field.id, event.target.value)}
+                            placeholder={copy.placeholder}
+                            value={formState[fieldId]}
+                            onChange={(event) =>
+                              updateField(fieldId, event.target.value)
+                            }
                             aria-describedby={describedBy || undefined}
                             aria-invalid={Boolean(error)}
+                            className={formControlClassName}
                             disabled={isSubmitting}
                             required
                           />
                         )}
                         {helper ? (
                           <p
-                            id={`${field.id}-helper`}
-                            className="text-xs text-muted-foreground"
+                            id={`${fieldId}-helper`}
+                            className="text-sm font-medium leading-5 text-[#918f89]"
                           >
                             {helper}
                           </p>
                         ) : null}
                         {error ? (
-                          <p id={`${field.id}-error`} className="text-xs text-destructive">
+                          <p
+                            id={`${fieldId}-error`}
+                            className="text-sm font-semibold text-red-300"
+                          >
                             {error}
                           </p>
                         ) : null}
                       </div>
                     );
                   })}
+                </div>
 
-                  {apiError ? (
-                    <div
-                      role="alert"
-                      className="border border-destructive/30 bg-destructive/5 p-3"
-                    >
-                      <div className="flex items-center gap-2 text-xs font-medium text-destructive">
-                        <AlertCircle className="size-3.5" />
-                        <span>{apiError.message}</span>
-                      </div>
-                      {apiError.details && apiError.details.length > 0 ? (
-                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                          {apiError.details.slice(0, 5).map((detail) => (
-                            <p key={detail}>{detail}</p>
-                          ))}
-                        </div>
-                      ) : null}
+                {apiError ? (
+                  <div
+                    role="alert"
+                    className="mt-8 rounded-[14px] border border-red-300/25 bg-red-500/10 p-4"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-red-200">
+                      <AlertCircle className="size-4" />
+                      <span>{apiError.message}</span>
                     </div>
-                  ) : null}
-                </div>
+                    {apiError.details && apiError.details.length > 0 ? (
+                      <div className="mt-2 space-y-1 text-sm text-[#c9c7c1]">
+                        {apiError.details.slice(0, 5).map((detail) => (
+                          <p key={detail}>{detail}</p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                <div className="border-t bg-[#fbfdf9] p-5">
-                  <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <LoaderCircle className="animate-spin" />
-                        Submitting
-                      </>
-                    ) : (
-                      <>
-                        Submit request
-                        <Send />
-                      </>
-                    )}
-                  </Button>
-                  <p className="mt-3 text-center text-xs text-muted-foreground">
-                    You will see a confirmation after submitting. The FlytBase team
-                    receives the internal qualification brief separately.
-                  </p>
-                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="mt-12 h-20 w-full rounded-[16px] bg-[#fafafa] text-[30px] font-semibold text-[#060606] shadow-[0_18px_38px_rgba(0,0,0,0.22)] hover:bg-white sm:text-[34px]"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoaderCircle className="animate-spin" />
+                      Submitting
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
+                </Button>
+                <p className="mt-8 text-center text-xl font-semibold leading-snug text-[#928f89]">
+                  No account needed. We&apos;ll reach out at the email you provide.
+                </p>
               </form>
-            )}
-          </section>
-
-          <aside className="border bg-card p-4 shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
-            <p className="text-sm font-semibold">What happens next</p>
-            <div className="mt-4 space-y-3">
-              {[
-                "Your request is routed to the FlytBase sales team.",
-                "The admin cockpit qualifies the lead and prepares account context.",
-                "An AE receives a handoff summary and suggested response sequence.",
-              ].map((item) => (
-                <div key={item} className="flex gap-2 text-xs leading-5 text-muted-foreground">
-                  <span className="mt-1.5 size-1.5 shrink-0 bg-emerald-600" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </aside>
-        </div>
+            </>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -273,19 +334,20 @@ export function PublicContactForm() {
 
 function ThankYouState() {
   return (
-    <div className="flex min-h-[520px] flex-col items-center justify-center p-6 text-center">
-      <div className="flex size-12 items-center justify-center border border-emerald-700/20 bg-emerald-600 text-white">
-        <CheckCircle2 className="size-6" />
+    <div className="flex min-h-[620px] flex-col items-center justify-center text-center">
+      <div className="flex size-24 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
+        <CheckCircle2 className="size-12" strokeWidth={2.5} />
       </div>
-      <h2 className="mt-4 text-xl font-semibold">Thank you for submitting.</h2>
-      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-        Your request has been sent to the FlytBase team. A sales specialist will
-        review your use case and follow up with the right next step.
+      <h2 className="mt-9 text-4xl font-bold leading-none text-[#faf9f6] sm:text-[44px]">
+        Thank you for submitting.
+      </h2>
+      <p className="mt-5 max-w-2xl text-2xl font-semibold leading-snug text-[#c9c7c1] sm:text-[31px]">
+        Your request has been sent to the FlytBase team. We&apos;ll review the
+        drone operations context and follow up shortly.
       </p>
       <Button
         type="button"
-        variant="outline"
-        className="mt-5"
+        className="mt-12 h-16 rounded-[16px] bg-[#fafafa] px-10 text-2xl font-semibold text-[#060606] hover:bg-white"
         onClick={() => window.location.reload()}
       >
         Submit another request
@@ -294,15 +356,62 @@ function ThankYouState() {
   );
 }
 
-function getPublicHelper(fieldId: keyof LeadInput) {
-  switch (fieldId) {
-    case "rawEmail":
-      return "Required. Include your site type, use case, scale, urgency, and any drone automation requirements.";
-    case "companyWebsite":
-      return "Used for server-side public account context in the internal admin cockpit.";
-    default:
-      return undefined;
+function getLeadInputField(fieldId: keyof LeadInput): LeadInputField | undefined {
+  return leadInputFields.find((field) => field.id === fieldId);
+}
+
+function normalizeLeadInput(value: LeadInput): LeadInput {
+  const companyWebsite = value.companyWebsite.trim();
+
+  return {
+    rawEmail: value.rawEmail.trim(),
+    senderName: value.senderName.trim(),
+    senderEmail: value.senderEmail.trim(),
+    companyWebsite:
+      companyWebsite && !/^https?:\/\//i.test(companyWebsite)
+        ? `https://${companyWebsite}`
+        : companyWebsite,
+    region: value.region.trim(),
+  };
+}
+
+function validateLeadInput(value: LeadInput) {
+  const errors: Partial<Record<keyof LeadInput, string>> = {};
+
+  if (!value.senderName) {
+    errors.senderName = "Enter your full name.";
   }
+
+  if (!value.senderEmail || !value.senderEmail.includes("@")) {
+    errors.senderEmail = "Enter a valid work email.";
+  }
+
+  if (!isValidUrl(value.companyWebsite)) {
+    errors.companyWebsite = "Enter a valid company website.";
+  }
+
+  if (!value.region) {
+    errors.region = "Select your region.";
+  }
+
+  if (!value.rawEmail) {
+    errors.rawEmail = "Tell us what you need help with.";
+  }
+
+  return errors;
+}
+
+function isValidUrl(value: string) {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function getPublicHelper(_fieldId: keyof LeadInput) {
+  return undefined;
 }
 
 function isSuccessPayload(value: unknown) {

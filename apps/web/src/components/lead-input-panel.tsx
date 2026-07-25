@@ -157,10 +157,10 @@ export function LeadInputPanel({
 
   if (mode === "submitted" && submittedAnalysis) {
     return (
-      <section className="flex min-h-[640px] flex-col overflow-hidden border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
-        <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#fbfdf9] px-5">
+      <section className="flex min-h-[640px] flex-col overflow-hidden rounded-xl border bg-card shadow-[0_16px_40px_rgba(0,0,0,0.18)] lg:min-h-0">
+        <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#242421] px-5">
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-[#7db7ff]">
               <CheckCircle2 className="size-3.5" />
               Submission received
             </div>
@@ -182,9 +182,9 @@ export function LeadInputPanel({
 
         <div className="flex flex-1 flex-col justify-between p-5">
           <div className="space-y-4">
-            <div className="border border-emerald-700/25 bg-emerald-500/10 p-4">
+            <div className="rounded-lg border border-[#1f5d9c]/45 bg-[#0b4f9c]/20 p-4">
               <div className="flex items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center border border-emerald-700/20 bg-emerald-600 text-white">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#1f5d9c]/50 bg-[#062d5f] text-[#7db7ff]">
                   <ClipboardCheck className="size-5" />
                 </div>
                 <div className="min-w-0">
@@ -228,10 +228,10 @@ export function LeadInputPanel({
   }
 
   return (
-    <section className="flex min-h-[640px] flex-col overflow-hidden border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
-      <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#fbfdf9] px-5">
+    <section className="flex min-h-[640px] flex-col overflow-hidden rounded-xl border bg-card shadow-[0_16px_40px_rgba(0,0,0,0.18)] lg:min-h-0">
+      <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#242421] px-5">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-[#7db7ff]">
             <Send className="size-3.5" />
             Live lead intake
           </div>
@@ -288,7 +288,7 @@ export function LeadInputPanel({
                     onChange={(event) => updateField(field.id, event.target.value)}
                     aria-describedby={describedBy || undefined}
                     aria-invalid={Boolean(error)}
-                    className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                    className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs outline-none transition-[background-color,border-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
                     disabled={isSubmitting}
                   >
                     <option value="" disabled>
@@ -328,7 +328,7 @@ export function LeadInputPanel({
           })}
 
           {apiError ? (
-            <div role="alert" className="border border-destructive/30 bg-destructive/5 p-3">
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
               <div className="flex items-center gap-2 text-xs font-medium text-destructive">
                 <AlertCircle className="size-3.5" />
                 <span>{apiError.message}</span>
@@ -344,7 +344,7 @@ export function LeadInputPanel({
           ) : null}
         </div>
 
-        <div className="shrink-0 border-t bg-[#fbfdf9] p-5">
+        <div className="shrink-0 border-t bg-[#242421] p-5">
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
@@ -370,7 +370,7 @@ export function LeadInputPanel({
 
 function SubmittedMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 border bg-background p-3 shadow-[0_6px_18px_rgba(12,35,29,0.035)]">
+    <div className="min-w-0 rounded-lg border bg-background p-3 shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
       <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
       <p className="mt-1 break-words text-sm font-semibold">{value}</p>
     </div>

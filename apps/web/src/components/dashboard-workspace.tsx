@@ -80,11 +80,11 @@ export function DashboardWorkspace() {
   }
 
   return (
-    <div className="grid flex-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
-      <section className="flex min-h-[560px] flex-col overflow-hidden border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
-        <div className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b bg-[#fbfdf9] px-5">
+    <div className="grid flex-1 gap-3 bg-[#292927] p-3 lg:min-h-0 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+      <section className="flex min-h-[560px] flex-col overflow-hidden rounded-xl border bg-card shadow-[0_16px_40px_rgba(0,0,0,0.18)] lg:min-h-0">
+        <div className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b bg-[#242421] px-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-[#7db7ff]">
               <Inbox className="size-3.5" />
               Contact submissions
             </div>
@@ -128,7 +128,7 @@ export function DashboardWorkspace() {
               />
               <Link
                 href="/contact-us"
-                className="inline-flex h-8 w-full items-center justify-center border bg-background px-2.5 text-xs font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98]"
+                className="inline-flex h-8 w-full items-center justify-center rounded-lg border bg-background px-2.5 text-xs font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98]"
               >
                 Open contact form
               </Link>
@@ -145,9 +145,9 @@ export function DashboardWorkspace() {
                     key={lead.id}
                     type="button"
                     className={[
-                      "w-full border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.99]",
+                      "w-full rounded-lg border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.99]",
                       isSelected
-                        ? "border-emerald-700/30 bg-emerald-500/10 shadow-[0_8px_24px_rgba(12,35,29,0.06)]"
+                        ? "border-[#1f5d9c]/60 bg-[#0b4f9c]/20 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
                         : "bg-background hover:bg-muted/50",
                     ].join(" ")}
                     onClick={() => setSelectedLeadId(lead.id)}
@@ -161,7 +161,7 @@ export function DashboardWorkspace() {
                           {lead.leadInput.senderName} - {lead.leadInput.region}
                         </p>
                       </div>
-                      <span className="shrink-0 border border-emerald-700/20 bg-white/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal text-emerald-800">
+                      <span className="shrink-0 rounded-md border border-[#fafafa] bg-[#fafafa] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-[#060606]">
                         {lead.analysis.leadSnapshot.leadScore}/100
                       </span>
                     </div>
@@ -181,10 +181,10 @@ export function DashboardWorkspace() {
           )}
         </div>
 
-        <div className="border-t bg-[#fbfdf9] p-4">
+        <div className="border-t bg-[#242421] p-4">
           <Link
             href="/contact-us"
-            className="inline-flex h-8 w-full items-center justify-center gap-1.5 border border-transparent px-2.5 text-xs font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98] [&_svg]:size-4"
+            className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-transparent px-2.5 text-xs font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted active:scale-[0.98] [&_svg]:size-4"
           >
             <UserRoundCheck />
             Public contact form
@@ -241,7 +241,7 @@ function QueueNotice({
   return (
     <div
       className={[
-        "border p-4",
+        "rounded-lg border p-4",
         tone === "danger"
           ? "border-destructive/30 bg-destructive/5"
           : "bg-background",
@@ -258,7 +258,7 @@ function QueueNotice({
 
 function QueueChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex max-w-full items-center border bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
+    <span className="inline-flex max-w-full items-center rounded-md border bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
       <span className="truncate">{children}</span>
     </span>
   );
