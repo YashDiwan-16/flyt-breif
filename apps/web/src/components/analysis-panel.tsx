@@ -1,3 +1,5 @@
+"use client";
+
 import {
   type BANTQualification,
   type BantItem,
@@ -7,6 +9,7 @@ import {
 } from "@flyt-breif/core";
 import { Button } from "@flyt-breif/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@flyt-breif/ui/components/card";
+import { toast } from "@flyt-breif/ui/components/sonner";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -15,6 +18,8 @@ import {
   CheckCircle2,
   CircleDashed,
   ClipboardList,
+  Copy,
+  Download,
   ExternalLink,
   FileText,
   Handshake,
@@ -55,19 +60,23 @@ export function AnalysisPanel({ state }: AnalysisPanelProps) {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col border-t bg-background lg:border-l lg:border-t-0">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b px-5">
+      <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-2">
         <div>
           <h2 className="text-sm font-semibold">Analysis Results</h2>
           <p className="text-xs text-muted-foreground">{getPanelSubtitle(state)}</p>
         </div>
-        <Button variant="outline" size="sm" disabled>
-          {state.status === "loading" ? (
-            <LoaderCircle className="animate-spin" />
-          ) : (
-            <Sparkles />
-          )}
-          {state.status === "loading" ? "Running" : "Server AI"}
-        </Button>
+        {state.status === "success" ? (
+          <AnalysisWorkflowActions analysis={state.analysis} />
+        ) : (
+          <Button variant="outline" size="sm" disabled>
+            {state.status === "loading" ? (
+              <LoaderCircle className="animate-spin" />
+            ) : (
+              <Sparkles />
+            )}
+            {state.status === "loading" ? "Running" : "Server AI"}
+          </Button>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto p-5">
@@ -94,6 +103,37 @@ export function AnalysisPanel({ state }: AnalysisPanelProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+function AnalysisWorkflowActions({ analysis }: { analysis: LeadAnalysis }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => void copyWorkflowText("AE summary", buildAeSummaryText(analysis))}
+      >
+        <Copy />
+        Copy AE Summary
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => void copyWorkflowText("Email sequence", buildEmailSequenceText(analysis))}
+      >
+        <Copy />
+        Copy Email Sequence
+      </Button>
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => exportWorkflowMarkdown(analysis)}
+      >
+        <Download />
+        Export Markdown
+      </Button>
+    </div>
   );
 }
 
@@ -810,6 +850,333 @@ function getBantRows(qualification: BANTQualification): readonly {
     { label: "Need", item: qualification.need },
     { label: "Timeline", item: qualification.timeline },
   ];
+}
+
+async function copyWorkflowText(label: string, text: string) {
+  try {
+    await writeClipboardText(text);
+    toast.success(`${label} copied`);
+  } catch {
+    toast.error(`Could not copy ${label.toLowerCase()}`);
+  }
+}
+
+async function writeClipboardText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to the textarea path for browsers that gate clipboard access.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.left = "-9999px";
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
+}
+
+function exportWorkflowMarkdown(analysis: LeadAnalysis) {
+  try {
+    const markdown = buildAnalysisMarkdown(analysis);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `flytbdr-${slugify(analysis.leadSnapshot.companyName)}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Markdown exported");
+  } catch {
+    toast.error("Could not export markdown");
+  }
+}
+
+function buildAeSummaryText(analysis: LeadAnalysis) {
+  return [
+    `# AE Handoff: ${analysis.leadSnapshot.companyName}`,
+    formatLeadSnapshotMarkdown(analysis, "##"),
+    formatAeHandoffMarkdown(analysis, "##"),
+    formatWarningsMarkdown(analysis, "##"),
+  ].join("\n\n");
+}
+
+function buildEmailSequenceText(analysis: LeadAnalysis) {
+  return [
+    `# Email Sequence: ${analysis.leadSnapshot.companyName}`,
+    formatEmailSequenceMarkdown(analysis, "##"),
+  ].join("\n\n");
+}
+
+function buildAnalysisMarkdown(analysis: LeadAnalysis) {
+  return [
+    `# FlytBDR Copilot Analysis: ${analysis.leadSnapshot.companyName}`,
+    `Confidence: ${formatPercent(analysis.confidence)}`,
+    formatLeadSnapshotMarkdown(analysis, "##"),
+    formatQualificationMarkdown(analysis, "##"),
+    formatAccountResearchMarkdown(analysis, "##"),
+    formatCaseStudyMarkdown(analysis, "##"),
+    formatGtmMotionMarkdown(analysis, "##"),
+    formatEmailSequenceMarkdown(analysis, "##"),
+    formatAeHandoffMarkdown(analysis, "##"),
+    formatWarningsMarkdown(analysis, "##"),
+    formatSourcesMarkdown(analysis, "##"),
+  ].join("\n\n");
+}
+
+function formatLeadSnapshotMarkdown(analysis: LeadAnalysis, heading: string) {
+  const { leadSnapshot, parsedSignals } = analysis;
+
+  return [
+    `${heading} Lead Snapshot`,
+    markdownFields([
+      ["Company", leadSnapshot.companyName],
+      ["Contact", `${leadSnapshot.contactName} (${leadSnapshot.contactRole})`],
+      ["Sender email", parsedSignals.contactEmail],
+      ["Website", parsedSignals.companyWebsite],
+      ["Industry", leadSnapshot.industry],
+      ["Region", leadSnapshot.region],
+      ["Use case", leadSnapshot.useCase],
+      ["Urgency", formatLabel(leadSnapshot.urgency)],
+      ["Lead score", `${leadSnapshot.leadScore}/100`],
+      ["Qualification", formatLabel(leadSnapshot.qualificationLabel)],
+    ]),
+    `${heading}# Parsed Signals`,
+    markdownFields([
+      ["Pain points", inlineList(parsedSignals.painPoints)],
+      ["Business triggers", inlineList(parsedSignals.businessTriggers)],
+      ["Budget signals", inlineList(parsedSignals.budgetSignals)],
+      ["Authority signals", inlineList(parsedSignals.authoritySignals)],
+      ["Need signals", inlineList(parsedSignals.needSignals)],
+      ["Timeline signals", inlineList(parsedSignals.timelineSignals)],
+    ]),
+  ].join("\n\n");
+}
+
+function formatQualificationMarkdown(analysis: LeadAnalysis, heading: string) {
+  const sectionHeading = `${heading}#`;
+
+  return [
+    `${heading} Qualification`,
+    ...getBantRows(analysis.qualification).map(({ label, item }) =>
+      [
+        `${sectionHeading} ${label} (${item.score}/5)`,
+        "**Evidence**",
+        markdownList(item.evidence),
+        "**Missing Info**",
+        markdownList(item.missingInfo),
+        `**Discovery Question:** ${item.discoveryQuestion}`,
+      ].join("\n\n"),
+    ),
+  ].join("\n\n");
+}
+
+function formatAccountResearchMarkdown(analysis: LeadAnalysis, heading: string) {
+  const { accountResearch } = analysis;
+
+  return [
+    `${heading} Account Research`,
+    markdownFields([
+      ["Company overview", accountResearch.companyOverview],
+      ["Industry", accountResearch.industry],
+      ["Region", accountResearch.region],
+      ["Company size", accountResearch.companySize],
+      ["Headquarters", accountResearch.headquarters],
+      ["Operating context", accountResearch.operatingContext],
+    ]),
+    "**Key Signals**",
+    markdownList(accountResearch.keySignals),
+    "**Likely Buying Committee**",
+    markdownList(accountResearch.likelyBuyingCommittee),
+    "**Research Gaps**",
+    markdownList(accountResearch.researchGaps),
+  ].join("\n\n");
+}
+
+function formatCaseStudyMarkdown(analysis: LeadAnalysis, heading: string) {
+  const match = analysis.matchedCaseStudy;
+
+  return [
+    `${heading} Case Study Match`,
+    markdownFields([
+      ["Title", match.title],
+      ["Industry", match.industry],
+      ["Region", match.region],
+      ["Confidence", formatPercent(match.confidence)],
+      ["Rationale", match.relevanceRationale],
+      ["Recommended email line", match.recommendedEmailLine],
+      ["URL", match.url],
+    ]),
+    "**Matched Use Cases**",
+    markdownList(match.matchedUseCases),
+    "**Matched Pain Points**",
+    markdownList(match.matchedPainPoints),
+    "**Proof Points**",
+    markdownList(match.proofPoints),
+  ].join("\n\n");
+}
+
+function formatGtmMotionMarkdown(analysis: LeadAnalysis, heading: string) {
+  const gtm = analysis.gtmRecommendation;
+
+  return [
+    `${heading} GTM Motion`,
+    markdownFields([
+      ["Priority", formatLabel(gtm.priority)],
+      ["Recommended motion", gtm.recommendedMotion],
+      ["Primary persona", gtm.primaryPersona],
+      ["Positioning", gtm.positioning],
+      ["Recommended offer", gtm.recommendedOffer],
+      ["Next best action", gtm.nextBestAction],
+    ]),
+    "**Discovery Focus**",
+    markdownList(gtm.discoveryFocus),
+    "**Risk Notes**",
+    markdownList(gtm.riskNotes),
+  ].join("\n\n");
+}
+
+function formatEmailSequenceMarkdown(analysis: LeadAnalysis, heading: string) {
+  const stepHeading = `${heading}#`;
+
+  return [
+    `${heading} Email Sequence`,
+    `**Strategy:** ${analysis.emailSequence.strategy}`,
+    ...analysis.emailSequence.steps.map((step) =>
+      [
+        `${stepHeading} ${step.step}. ${formatEmailStepType(step.type)}`,
+        markdownFields([
+          ["Delay", step.delayDays === 0 ? "Send immediately" : `${step.delayDays} days later`],
+          ["Subject", step.subject],
+          ["Purpose", step.purpose],
+          ["Call to action", step.callToAction],
+        ]),
+        "**Body**",
+        step.body.trim(),
+        "**Personalization Notes**",
+        markdownList(step.personalizationNotes),
+      ].join("\n\n"),
+    ),
+  ].join("\n\n");
+}
+
+function formatAeHandoffMarkdown(analysis: LeadAnalysis, heading: string) {
+  const handoff = analysis.aeHandoffSummary;
+  const sectionHeading = `${heading}#`;
+
+  return [
+    `${heading} AE Handoff`,
+    handoff.summary,
+    `${sectionHeading} Why This Lead Matters`,
+    handoff.whyThisLeadMatters,
+    `${sectionHeading} Pain Hypothesis`,
+    handoff.painHypothesis,
+    `${sectionHeading} Evidence`,
+    markdownList(handoff.evidence),
+    `${sectionHeading} Missing Info`,
+    markdownList(handoff.missingInfo),
+    `${sectionHeading} Top Discovery Questions`,
+    markdownList(handoff.topDiscoveryQuestions),
+    `${sectionHeading} Suggested Call Agenda`,
+    markdownList(handoff.suggestedCallAgenda),
+    `${sectionHeading} Recommended Next Steps`,
+    markdownList(handoff.recommendedNextSteps),
+    `${sectionHeading} GTM Owner`,
+    handoff.gtmOwner,
+    `${sectionHeading} Risk Notes`,
+    markdownList(handoff.riskNotes),
+  ].join("\n\n");
+}
+
+function formatWarningsMarkdown(analysis: LeadAnalysis, heading: string) {
+  return [
+    `${heading} Warnings / Missing Info`,
+    "**Warnings**",
+    markdownList(analysis.warnings),
+    "**Missing Info Rollup**",
+    markdownList(getMissingInfoRollup(analysis)),
+  ].join("\n\n");
+}
+
+function formatSourcesMarkdown(analysis: LeadAnalysis, heading: string) {
+  const sources = collectUnique(
+    [...analysis.sources, ...analysis.accountResearch.sources].map((source) => {
+      const url = source.url ? ` (${source.url})` : "";
+      return `${source.title}${url} - ${inlineList(source.usedFor)}`;
+    }),
+  );
+
+  return [`${heading} Sources`, markdownList(sources)].join("\n\n");
+}
+
+function getMissingInfoRollup(analysis: LeadAnalysis) {
+  const bantMissingInfo = getBantRows(analysis.qualification).flatMap(({ label, item }) =>
+    item.missingInfo.map((info) => `${label}: ${info}`),
+  );
+
+  return collectUnique([
+    ...analysis.parsedSignals.missingInfo,
+    ...analysis.accountResearch.researchGaps.map((gap) => `Research gap: ${gap}`),
+    ...bantMissingInfo,
+    ...analysis.aeHandoffSummary.missingInfo,
+    ...analysis.gtmRecommendation.riskNotes.map((note) => `GTM risk: ${note}`),
+    ...analysis.aeHandoffSummary.riskNotes.map((note) => `AE risk: ${note}`),
+  ]);
+}
+
+function markdownFields(fields: readonly (readonly [string, string])[]) {
+  return fields
+    .map(([label, value]) => `- **${label}:** ${singleLineMarkdown(value)}`)
+    .join("\n");
+}
+
+function markdownList(items: readonly string[], fallback = "Not captured") {
+  const cleanedItems = collectUnique(items);
+
+  if (cleanedItems.length === 0) {
+    return `- ${fallback}`;
+  }
+
+  return cleanedItems.map((item) => `- ${singleLineMarkdown(item)}`).join("\n");
+}
+
+function collectUnique(items: readonly string[]) {
+  return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
+}
+
+function inlineList(items: readonly string[]) {
+  const cleanedItems = collectUnique(items);
+
+  return cleanedItems.length > 0 ? cleanedItems.join(", ") : "Not captured";
+}
+
+function singleLineMarkdown(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "lead-analysis";
 }
 
 function getSummaryCards(state: AnalysisPanelState) {
