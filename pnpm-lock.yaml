@@ -196,6 +196,25 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/ai:
+    dependencies:
+      '@flyt-breif/data':
+        specifier: workspace:*
+        version: link:../data
+      ai:
+        specifier: ^7.0.37
+        version: 7.0.37(zod@4.4.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@flyt-breif/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/api:
     dependencies:
       '@flyt-breif/auth':

@@ -13,6 +13,7 @@ flyt-breif/
 │   └── server/       # Existing backend scaffold, not used by the shell yet
 ├── packages/
 │   ├── core/         # Shared FlytBDR domain types and constants
+│   ├── ai/           # AI SDK tools for lead extraction, matching, scoring, and GTM motion
 │   ├── data/         # Case-study retrieval context and matching helpers
 │   ├── ui/           # Shared UI primitives and Tailwind theme
 │   ├── api/          # Existing API scaffold
