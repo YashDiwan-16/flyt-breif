@@ -44,6 +44,10 @@ lerna-debug.log*
 .alchemy
 .vercel
 
+# Local agent skills
+.agents/
+skills-lock.json
+
 # Testing
 coverage
 .nyc_output
