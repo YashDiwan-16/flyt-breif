@@ -3,6 +3,8 @@ import { User } from "@flyt-breif/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { ensureSalesIntelligenceDatabase } from "@/lib/server/database-setup";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -13,6 +15,8 @@ const bootstrapSchema = z.strictObject({
 });
 
 export async function GET() {
+  await ensureSalesIntelligenceDatabase();
+
   const userCount = await User.countDocuments();
 
   return NextResponse.json(
@@ -29,6 +33,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  await ensureSalesIntelligenceDatabase();
+
   const userCount = await User.countDocuments();
 
   if (userCount > 0) {

@@ -1,4 +1,5 @@
-export const FLYTBASE_DATABASE_NAME = "flytbase";
+export const DEFAULT_FLYTBASE_DATABASE_NAME = "flytbase";
+export const FLYTBASE_DATABASE_NAME = DEFAULT_FLYTBASE_DATABASE_NAME;
 
 export const flytbaseCollections = {
   users: "users",

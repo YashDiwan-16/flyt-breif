@@ -43,6 +43,7 @@ const fallbackDiscoveryQuestions = {
 } as const;
 
 const caseStudyRegions: Record<string, string> = {
+  "anglo-american-autonomous-mining-drones-peru": "Latin America",
   "csx-rail-infrastructure-monitoring": "North America",
   "dole-asia-agriculture-security": "Asia Pacific",
   "enbw-solar-pv-inspections": "Europe",
@@ -89,9 +90,15 @@ export function buildDeterministicLeadAnalysis({
   const missingInfo = getMissingInfo(bantScoring, researchContext);
   const contactFirstName = getFirstName(leadInput.senderName);
   const droneOperation = getDroneOperation(parsedLead);
+  const hasPublicResearchSources = researchContext.sources.some(
+    (source) =>
+      source.kind === "company-domain" || source.kind === "public-web-source",
+  );
   const warnings = [
     "Gemini analysis was unavailable, so FlytBDR returned a deterministic fallback analysis to keep the intake workflow available.",
-    "Fallback account research is inferred from inbound lead fields and adapter context, not verified broader public web research.",
+    hasPublicResearchSources
+      ? "Fallback account research used public source snippets from the research adapter plus inbound email evidence; any unavailable facts are kept as unknown."
+      : "Fallback account research is inferred from inbound lead fields and adapter context, not verified broader public web research.",
     ...researchContext.warnings,
     ...(failureReason ? [`AI failure captured by server: ${failureReason}`] : []),
   ];
@@ -400,8 +407,8 @@ function getLeadScore(
     Math.min(
       96,
       Math.round(
-        totalBantScore * 4 +
-          getCaseStudyConfidence(caseStudyScore) * 20 +
+        totalBantScore * 4.5 +
+          getCaseStudyConfidence(caseStudyScore) * 24 +
           urgencyBoost,
       ),
     ),

@@ -1,4 +1,5 @@
 import "server-only";
+import "@flyt-breif/env/server";
 
 import { createGoogle } from "@ai-sdk/google";
 import { z } from "zod";

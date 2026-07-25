@@ -7,11 +7,11 @@ import mongoose from "mongoose";
 
 if (mongoose.connection.readyState === 0) {
   await mongoose.connect(env.DATABASE_URL, {
-    dbName: FLYTBASE_DATABASE_NAME,
+    dbName: env.DATABASE_NAME,
   });
 }
 
-const client = mongoose.connection.getClient().db(FLYTBASE_DATABASE_NAME);
+const client = mongoose.connection.getClient().db(env.DATABASE_NAME);
 
 export { client };
 export {
@@ -21,4 +21,5 @@ export {
   flytbaseCollections as flytbreifCollections,
 };
 export * from "./models/auth.model";
+export * from "./case-study-sync";
 export * from "./models/sales-intelligence.model";

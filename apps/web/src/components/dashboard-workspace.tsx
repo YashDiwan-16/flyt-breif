@@ -222,8 +222,10 @@ function getPanelState({
     status: "success",
     analysis: selectedLead.analysis,
     analysisStatus: selectedLead.analysisStatus,
+    leadInput: selectedLead.leadInput,
     modelId: selectedLead.modelId,
     statusMessage: selectedLead.statusMessage,
+    submittedAt: selectedLead.submittedAt,
   };
 }
 

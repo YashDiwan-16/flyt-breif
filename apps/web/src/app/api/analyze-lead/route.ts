@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import type { ZodIssue } from "zod";
 
 import { DEFAULT_AI_MODEL_ID, getGoogleLanguageModel } from "@/lib/ai/google";
+import { ensureSalesIntelligenceDatabase } from "@/lib/server/database-setup";
 import { sendLeadNotificationEmail } from "@/lib/server/lead-notifications";
 import { storeLeadSubmission } from "@/lib/server/lead-submissions";
 
@@ -26,6 +27,12 @@ const ANALYZE_LEAD_SYSTEM_PROMPT = `
 You are FlytBDR Copilot, an internal sales intelligence analyst for FlytBase inbound BDR work.
 
 Return an AE-ready LeadAnalysis object only. Use the schema exactly.
+
+Assignment context:
+- This is an inspectable AI workflow for the FlytBase inbound BDR challenge.
+- The system starts from one raw contact-form email and must produce the artifacts a human inbound BDR would produce.
+- Organize your reasoning into these stages even though the final schema is LeadAnalysis:
+  Stage 1 Qualification, Stage 2 Deep Account Research, Stage 3 Response Generation, Stage 4 Case Study and Material Matching, Stage 5 GTM Routing, Stage 6 AE Handoff and Report Generation.
 
 Rules:
 - Do not invent public facts.
@@ -43,9 +50,12 @@ Rules:
 - BANT scoring must reflect evidence quality. Need can score high from a concrete operations problem. Budget, Authority, and Timeline should stay low or medium unless the inbound email actually mentions funding, decision ownership, urgency, deadline, pilot date, or procurement context.
 - For sources, use only sourceType values allowed by the schema.
 - The model cannot browse on its own. Use only the inbound email, tool results, and ResearchAdapterContext.
-- Do not claim headquarters, company size, funding, customer names, or market facts unless they appear in the inbound email or adapter-provided public website context. Mark them as "Unknown - not verified" or "Inferred: ..." when needed.
+- Do not claim headquarters, company size, org structure, reporting lines, capex, opex, funding, technology investments, recent news, investor priorities, customer names, or market facts unless they appear in the inbound email or adapter-provided public source context. Mark them as "Unknown - not verified" or "Inferred: ..." when needed.
 - If adapter-provided research context is inferred or limited, preserve that caveat in accountResearch and warnings.
+- If public source context includes investor, annual-report, news, sustainability, strategy, operations, or technology pages, synthesize only the specific facts present in those sources and include them in keySignals with source caveats.
+- If public source context is thin, say what needs a real search/enrichment adapter next. Never compensate with filler.
 - If a case study returned by tools does not include a region, set matchedCaseStudy.region to "Not provided in knowledge base" and include that caveat in warnings.
+- Case-study matching must use FlytBase public case-study material returned by the tool/retrieval context. If the inbound email references Anglo American, evaluate the Anglo American mining case-study connection without hard-coding it as the winner.
 
 Workflow:
 1. Use extractLeadSignals for the inbound email.
@@ -75,6 +85,8 @@ export async function POST(request: Request) {
   }
 
   const leadInput = leadInputResult.data;
+  await ensureSalesIntelligenceDatabase();
+
   const { parsedLeadSignals, researchContext } = await getLeadContext(leadInput);
 
   try {
@@ -137,11 +149,11 @@ export async function POST(request: Request) {
       researchContext,
     });
     const modelId = getConfiguredModelId();
+    const fallbackStatusMessage = `Deterministic fallback returned: ${failureReason}`;
     const storedSubmission = await storeLeadSubmission({
       leadInput,
       analysisStatus: "fallback",
-      statusMessage:
-        "Deterministic fallback returned because Gemini was unavailable or invalid.",
+      statusMessage: fallbackStatusMessage,
       modelId,
       analysis: fallbackAnalysis,
     });
@@ -153,8 +165,7 @@ export async function POST(request: Request) {
         ok: true,
         submissionId: storedSubmission.id,
         analysisStatus: "fallback",
-        statusMessage:
-          "Deterministic fallback returned because Gemini was unavailable or invalid.",
+        statusMessage: fallbackStatusMessage,
         notificationStatus,
         modelId,
         analysis: fallbackAnalysis,
@@ -183,6 +194,12 @@ ${JSON.stringify(researchContext, null, 2)}
 
 Final response requirements:
 - Return a complete LeadAnalysis object.
+- Stage 1 / Qualification: use BANT because contact-form inputs are sparse and BANT separates known operational need from missing budget, authority, and timeline. Mention missing info clearly in qualification and AE handoff.
+- Stage 2 / Deep Account Research: synthesize ResearchAdapterContext. Distinguish public-source facts from inferred operating hypotheses. Do not fabricate organizational structure, capex, opex, technology investments, recent news, or investor priorities.
+- Stage 3 / Response Generation: make each email respond to Stage 2 research and discover Stage 1 unknowns.
+- Stage 4 / Case Study Matching: explain why the matched FlytBase case study is strongest for the lead's industry, use case, and operational context.
+- Stage 5 / GTM Routing: recommend Direct AE, Partner-led, or Hybrid with operational reasoning.
+- Stage 6 / AE Handoff: produce a concise handoff that an AE can trust, including evidence, missing info, questions, agenda, GTM owner, and risk notes.
 - leadSnapshot should summarize the account, persona, use case, urgency, score, and qualification label.
 - parsedSignals should preserve extracted email evidence and clearly list missingInfo.
 - parsedSignals and qualification should be honest about unknowns. If the contact form does not provide a budget, decision owner, buying process, legal/procurement process, competitor, or deadline, list that gap explicitly and avoid confident-sounding placeholders.

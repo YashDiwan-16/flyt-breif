@@ -43,11 +43,11 @@ pnpm run dev:web
 
 Open [http://localhost:3001/contact-us](http://localhost:3001/contact-us) for the public form or [http://localhost:3001/admin](http://localhost:3001/admin) for the admin cockpit.
 
-Local development defaults to `mongodb://127.0.0.1:27017/flytbase`. Start MongoDB locally or set `DATABASE_URL` in `apps/web/.env.local` before submitting leads or logging in.
+Local development defaults to `mongodb://127.0.0.1:27017/flytbase` with `DATABASE_NAME=flytbase`. Start MongoDB locally or set `DATABASE_URL` and `DATABASE_NAME` in root `.env.local` or `apps/server/.env.local` before submitting leads or logging in.
 
 ## AI Configuration
 
-Copy `apps/web/.env.example` to `apps/web/.env.local` and set either `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY`. The web app defaults `AI_MODEL_ID` to `gemini-2.5-flash`.
+Copy `.env.example` to root `.env.local` or copy `apps/server/.env.example` to `apps/server/.env.local`, then set either `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY`. The web app defaults `AI_MODEL_ID` to `gemini-2.5-flash`.
 
 AI calls are kept server-side. The initial health check lives at `GET /api/health-ai` and uses the Vercel AI SDK Google provider from a Next.js route handler. Lead analysis never calls Gemini from the browser.
 
@@ -59,7 +59,7 @@ Admin login uses Better Auth. On a fresh database, `/admin` shows a one-time fir
 
 ## Lead Email Notifications
 
-New contact form submissions send a server-side Nodemailer alert after the lead is analyzed and stored. Configure Gmail with these server-only variables in `apps/web/.env.local`:
+New contact form submissions send a server-side Nodemailer alert after the lead is analyzed and stored. Configure Gmail with these server-only variables in root `.env.local` or `apps/server/.env.local`:
 
 ```bash
 EMAIL_SERVER_HOST=smtp.gmail.com
@@ -95,7 +95,7 @@ Design direction: premium internal sales cockpit, dense but readable, enterprise
 
 ## Data Model
 
-MongoDB data is scoped to the `flytbase` database. Shared collection names live in `packages/core/src/database.ts`, AI analysis responses validate against `leadAnalysisSchema` before persistence, and case-study retrieval context lives in `packages/data`.
+MongoDB data is scoped by `DATABASE_NAME` and defaults to `flytbase`. Shared collection names live in `packages/core/src/database.ts`, AI analysis responses validate against `leadAnalysisSchema` before persistence, and the FlytBase case-study retrieval corpus from `packages/data` is synced into the `case_studies` collection when the server initializes admin or analysis routes.
 
 ## Scripts
 

@@ -19,6 +19,7 @@ import {
 } from "./schemas";
 
 const UNKNOWN_VALUE = "Unknown";
+const LOWERCASE_NAME_PARTS = new Set(["and", "da", "de", "del", "do", "of", "y"]);
 
 const DOMAIN_KEYWORDS = [
   "agriculture",
@@ -600,7 +601,7 @@ function inferCompanyName(
   senderEmail?: string,
 ): string {
   const explicitCompanyMatch = rawEmail.match(
-    /\b(?:company|organization|organisation|from)\s*[:\-]\s*([a-z0-9 .&'-]{2,80})/i,
+    /^\s*(?:company|organization|organisation)\s*[:\-]\s*(.{2,120})$/im,
   );
 
   if (explicitCompanyMatch?.[1]) {
@@ -749,9 +750,15 @@ function inferScale(searchText: string): LeadScale {
       "multiple sites",
       "multiple",
       "facilities",
+      "inspection zones",
+      "large remote",
+      "large site",
+      "large sites",
       "plants",
       "portfolio",
       "corridor",
+      "remote sites",
+      "zones",
     ])
   ) {
     return "multi-site";
@@ -807,6 +814,9 @@ function clampBantScore(score: number): 0 | 1 | 2 | 3 | 4 | 5 {
 
 function cleanCompanyCandidate(candidate: string): string {
   return candidate
+    .replace(/\s*<[^>]+>\s*/g, " ")
+    .replace(/\s*\([^)]*@[^)]*\)\s*/g, " ")
+    .replace(/,\s*(?:chile|germany|peru|uae|united arab emirates|philippines|slovakia|united states|usa|uk|india)\s*$/i, "")
     .replace(/\b(?:and|but|we|i|our|looking|interested)\b.*$/i, "")
     .trim();
 }
@@ -838,11 +848,24 @@ function normalizeText(text: string): string {
 function titleCase(value: string): string {
   return value
     .split(/[\s.-]+/)
+    .map((part) => part.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, ""))
     .filter(Boolean)
-    .map((part) =>
-      /[a-z][A-Z]/.test(part)
-        ? part
-        : `${part[0]?.toUpperCase() ?? ""}${part.slice(1).toLowerCase()}`,
-    )
+    .map((part) => {
+      const lowercasePart = part.toLowerCase();
+
+      if (/^[A-Z0-9]{2,}$/.test(part)) {
+        return part;
+      }
+
+      if (LOWERCASE_NAME_PARTS.has(lowercasePart)) {
+        return lowercasePart;
+      }
+
+      if (/[a-z][A-Z]/.test(part)) {
+        return part;
+      }
+
+      return `${part[0]?.toUpperCase() ?? ""}${part.slice(1).toLowerCase()}`;
+    })
     .join(" ");
 }

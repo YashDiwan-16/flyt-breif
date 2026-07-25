@@ -1,4 +1,5 @@
 import "server-only";
+import "@flyt-breif/env/server";
 
 import nodemailer from "nodemailer";
 import { z } from "zod";

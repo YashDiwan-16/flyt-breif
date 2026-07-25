@@ -1,6 +1,7 @@
 import { auth } from "@flyt-breif/auth";
 import { NextResponse } from "next/server";
 
+import { ensureSalesIntelligenceDatabase } from "@/lib/server/database-setup";
 import { listLeadSubmissions } from "@/lib/server/lead-submissions";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function GET(request: Request) {
       },
     );
   }
+
+  await ensureSalesIntelligenceDatabase();
 
   return NextResponse.json(
     {

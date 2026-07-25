@@ -2,7 +2,11 @@ export type ResearchAdapterName = "demo" | "web";
 
 export type ResearchAdapterSource = {
   title: string;
-  kind: "demo-inference" | "company-domain" | "public-web-placeholder";
+  kind:
+    | "demo-inference"
+    | "company-domain"
+    | "public-web-source"
+    | "public-web-placeholder";
   url?: string;
   note: string;
 };
@@ -50,11 +54,67 @@ export const webResearchAdapter: ResearchAdapter = {
   research: async (input) => {
     const demoResult = buildDemoResearch(input);
     const websiteContext = await fetchPublicWebsiteContext(input.companyWebsite);
+    const sourcePageContexts = await discoverPublicResearchPages(input);
     const inferredSources = demoResult.sources.filter(
       (source) => source.kind !== "company-domain",
     );
+    const sourcePageSignals = sourcePageContexts.map((context) =>
+      context.title ? `${context.title} (${context.url})` : context.url,
+    );
+    const sourcePageCoverage =
+      sourcePageContexts.length > 0
+        ? ` Additional public research pages were fetched for source coverage: ${sourcePageSignals.join("; ")}.`
+        : " No additional investor/news/strategy pages were discovered from the public sitemap.";
+    const sourcePageSourceCitations = sourcePageContexts.map((context) => ({
+      title: context.title || "Public research page",
+      kind: "public-web-source" as const,
+      url: context.url,
+      note:
+        "Discovered from the submitted company's public sitemap or high-signal public paths and fetched server-side.",
+    }));
 
     if (!websiteContext) {
+      const publicSignals = collectUnique([
+        ...sourcePageContexts.flatMap((context) =>
+          contextToSignals(context, "Public research page"),
+        ),
+      ]);
+
+      if (sourcePageContexts.length > 0) {
+        return {
+          ...demoResult,
+          adapterName: "web",
+          companyOverview: `Public source signal: ${demoResult.companyName} returned readable public research pages even though the submitted homepage did not return usable context. Additional account fit is inferred from the inbound email and submitted domain.`,
+          operatingContext: `${demoResult.operatingContext} The submitted homepage fetch did not return readable context.${sourcePageCoverage}`,
+          keySignals: collectUnique([...publicSignals, ...demoResult.keySignals]),
+          sources: [
+            ...inferredSources,
+            {
+              title: "Submitted company website",
+              kind: "company-domain",
+              url: input.companyWebsite,
+              note:
+                "A public homepage fetch was attempted server-side, but no readable page context was returned.",
+            },
+            ...sourcePageSourceCitations,
+            {
+              title: "Public search provider integration backlog",
+              kind: "public-web-placeholder",
+              note:
+                "TODO: Add Tavily, Exa, Serper, Firecrawl, or Google Custom Search for broader public account research.",
+            },
+          ],
+          warnings: [
+            "Submitted homepage fetch did not return readable account context, but discovered public pages were fetched server-side.",
+            "If annual reports, filings, budget disclosures, org charts, or press releases are not present in fetched public pages, those fields must remain unknown rather than fabricated.",
+          ],
+          confidence: Math.min(
+            0.72,
+            demoResult.confidence + sourcePageContexts.length * 0.04,
+          ),
+        };
+      }
+
       return {
         ...demoResult,
         adapterName: "web",
@@ -83,14 +143,10 @@ export const webResearchAdapter: ResearchAdapter = {
     }
 
     const publicSignals = collectUnique([
-      websiteContext.title ? `Public website title: ${websiteContext.title}.` : "",
-      websiteContext.description
-        ? `Public website description: ${websiteContext.description}.`
-        : "",
-      ...websiteContext.headings.map((heading) => `Public website heading: ${heading}.`),
-      websiteContext.textSample
-        ? `Public website text sample: ${websiteContext.textSample}.`
-        : "",
+      ...contextToSignals(websiteContext, "Company website"),
+      ...sourcePageContexts.flatMap((context) =>
+        contextToSignals(context, "Public research page"),
+      ),
     ]);
     const websiteSummary =
       websiteContext.description ||
@@ -102,7 +158,7 @@ export const webResearchAdapter: ResearchAdapter = {
       ...demoResult,
       adapterName: "web",
       companyOverview: `Public website signal: ${demoResult.companyName} has public website context indicating "${websiteSummary}". Additional account fit is inferred from the inbound email and submitted domain.`,
-      operatingContext: `${demoResult.operatingContext} Public website context was fetched from the submitted domain, but broader public search is not connected yet.`,
+      operatingContext: `${demoResult.operatingContext} Public website context was fetched from the submitted domain.${sourcePageCoverage}`,
       keySignals: collectUnique([...publicSignals, ...demoResult.keySignals]),
       sources: [
         ...inferredSources,
@@ -113,6 +169,7 @@ export const webResearchAdapter: ResearchAdapter = {
           note:
             "Fetched public website title, metadata, headings, and visible text server-side.",
         },
+        ...sourcePageSourceCitations,
         {
           title: "Public search provider integration backlog",
           kind: "public-web-placeholder",
@@ -121,10 +178,15 @@ export const webResearchAdapter: ResearchAdapter = {
         },
       ],
       warnings: [
-        "Public research is currently limited to the submitted company website plus inbound email evidence.",
-        "Broader public account search is not connected yet, so company size, HQ, customers, funding, and market facts remain unverified unless present in the inbound email.",
+        sourcePageContexts.length > 0
+          ? "Public research includes the submitted company website and discovered public source pages, but it is still not a full web-search replacement."
+          : "Public research is currently limited to the submitted company website plus inbound email evidence.",
+        "If annual reports, filings, budget disclosures, org charts, or press releases are not present in fetched public pages, those fields must remain unknown rather than fabricated.",
       ],
-      confidence: Math.min(0.72, demoResult.confidence + 0.17),
+      confidence: Math.min(
+        0.82,
+        demoResult.confidence + 0.17 + sourcePageContexts.length * 0.03,
+      ),
     };
   },
 };
@@ -214,6 +276,140 @@ type PublicWebsiteContext = {
 };
 
 const PUBLIC_WEBSITE_TIMEOUT_MS = 4500;
+const PUBLIC_RESEARCH_PAGE_LIMIT = 6;
+const SITEMAP_URL_LIMIT = 80;
+const RESEARCH_PATH_HINTS = [
+  "annual",
+  "capex",
+  "corporate-governance",
+  "financial",
+  "investor",
+  "management",
+  "news",
+  "operations",
+  "press",
+  "report",
+  "results",
+  "strategy",
+  "sustainability",
+  "technology",
+] as const;
+
+async function discoverPublicResearchPages(
+  input: ResearchAdapterRequest,
+): Promise<readonly PublicWebsiteContext[]> {
+  const baseUrl = normalizeWebsiteUrl(input.companyWebsite);
+
+  if (!baseUrl) {
+    return [];
+  }
+
+  const sitemapUrls = await fetchSitemapUrls(baseUrl);
+  const directUrls = getLikelyResearchUrls(baseUrl);
+  const candidateUrls = collectUnique([...sitemapUrls, ...directUrls])
+    .filter((url) => isResearchUrl(url, input))
+    .slice(0, PUBLIC_RESEARCH_PAGE_LIMIT);
+  const contexts: PublicWebsiteContext[] = [];
+
+  for (const url of candidateUrls) {
+    const context = await fetchPublicWebsiteContext(url);
+
+    if (context) {
+      contexts.push(context);
+    }
+  }
+
+  return contexts;
+}
+
+async function fetchSitemapUrls(baseUrl: string): Promise<readonly string[]> {
+  const origin = new URL(baseUrl).origin;
+  const sitemapCandidates = [`${origin}/sitemap.xml`, `${origin}/sitemap_index.xml`];
+
+  for (const sitemapUrl of sitemapCandidates) {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      PUBLIC_WEBSITE_TIMEOUT_MS,
+    );
+
+    try {
+      const response = await fetch(sitemapUrl, {
+        headers: {
+          Accept: "application/xml,text/xml,text/plain",
+          "User-Agent": "FlytBDR-Copilot/0.1 (+server-side-account-research)",
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const xml = await response.text();
+      const urls = [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)]
+        .map((match) => cleanHtmlText(match[1] ?? ""))
+        .filter((url) => url.startsWith("http"))
+        .slice(0, SITEMAP_URL_LIMIT);
+
+      if (urls.length > 0) {
+        return urls;
+      }
+    } catch {
+      // Try the next sitemap candidate.
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return [];
+}
+
+function getLikelyResearchUrls(baseUrl: string): readonly string[] {
+  const origin = new URL(baseUrl).origin;
+
+  return [
+    "/investors",
+    "/investor-relations",
+    "/en/investor-relations",
+    "/news",
+    "/press",
+    "/sustainability",
+    "/annual-reports",
+    "/corporate-governance",
+  ].map((path) => `${origin}${path}`);
+}
+
+function isResearchUrl(url: string, input: ResearchAdapterRequest) {
+  const normalizedUrl = normalize(url);
+  const normalizedNeedle = normalize(
+    [
+      input.companyName,
+      input.companyDomain,
+      input.industry,
+      input.useCase,
+      ...(input.keywords ?? []),
+      ...RESEARCH_PATH_HINTS,
+    ].join(" "),
+  );
+
+  return RESEARCH_PATH_HINTS.some((hint) => normalizedUrl.includes(hint)) ||
+    normalizedNeedle
+      .split(" ")
+      .filter((term) => term.length > 4)
+      .some((term) => normalizedUrl.includes(term));
+}
+
+function contextToSignals(context: PublicWebsiteContext, label: string) {
+  return collectUnique([
+    context.title ? `${label} title: ${context.title}.` : "",
+    context.description ? `${label} description: ${context.description}.` : "",
+    ...context.headings
+      .slice(0, 4)
+      .map((heading) => `${label} heading: ${heading}.`),
+    context.textSample ? `${label} text sample: ${context.textSample}.` : "",
+  ]);
+}
 
 async function fetchPublicWebsiteContext(
   companyWebsite?: string,
