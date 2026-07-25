@@ -76,8 +76,8 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
             <Radar className="size-3.5" />
             Sales intelligence cockpit
           </div>
-          <h2 className="mt-1 text-sm font-semibold">Analysis Results</h2>
-          <p className="text-xs text-muted-foreground">{getPanelSubtitle(state)}</p>
+          <h2 className="mt-1 text-xl font-semibold">Analysis Results</h2>
+          <p className="text-sm leading-5 text-muted-foreground">{getPanelSubtitle(state)}</p>
         </div>
         {state.status === "success" ? (
           <div className="flex flex-wrap items-center justify-end gap-2">

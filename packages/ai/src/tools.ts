@@ -370,21 +370,20 @@ export function recommendGTMMotion({
 function scoreBudget(parsedLead: ParsedLeadSignals, signalText: string) {
   const evidence: string[] = [];
   const missingInfo: string[] = [];
-  let score = parsedLead.scale === "enterprise" ? 2 : 1;
+  let score = parsedLead.scale === "enterprise" ? 1 : 0;
 
   if (parsedLead.scale === "multi-site") {
     score += 1;
-    evidence.push("Lead appears to involve multiple sites or facilities.");
+    evidence.push("Scale suggests possible budget need, but no budget is confirmed.");
   }
 
   if (parsedLead.scale === "enterprise") {
-    score += 2;
-    evidence.push("Lead appears to involve enterprise-scale operations.");
+    score += 1;
+    evidence.push("Enterprise-scale operations suggest budget relevance, but funding is unverified.");
   }
 
   if (
     includesAny(signalText, [
-      "budget",
       "pricing",
       "cost",
       "commercial",
@@ -393,15 +392,30 @@ function scoreBudget(parsedLead: ParsedLeadSignals, signalText: string) {
       "tender",
     ])
   ) {
+    score += 1;
+    evidence.push("Email asks about commercial or procurement context, but no budget amount is confirmed.");
+  }
+
+  if (
+    includesAny(signalText, [
+      "budget approved",
+      "budget allocated",
+      "approved budget",
+      "funding approved",
+      "funded",
+      "purchase order",
+    ]) ||
+    /\$|\b(?:usd|eur|inr)\b|budget\s+(?:of|is|range)/i.test(signalText)
+  ) {
     score += 2;
-    evidence.push("Email includes commercial, procurement, or budget language.");
+    evidence.push("Email includes a stronger funding or budget signal.");
   }
 
   if (evidence.length === 0) {
     evidence.push("No explicit budget signal found.");
   }
 
-  if (score < 4) {
+  if (score < 5) {
     missingInfo.push("Confirmed budget range");
     missingInfo.push("Procurement process or funding owner");
   }
@@ -431,26 +445,20 @@ function scoreAuthority(parsedLead: ParsedLeadSignals, signalText: string) {
   }
 
   if (
-    includesAny(signalText, [
-      "we need",
-      "my team",
-      "our sites",
-      "evaluate",
-      "implementation",
-      "rollout",
-    ])
+    includesAny(signalText, ["my team", "evaluate", "implementation", "rollout"])
   ) {
     score += 1;
-    evidence.push("Email language suggests the sender is involved in evaluation.");
+    evidence.push("Email language suggests the sender may be involved in evaluation, but final authority is unverified.");
   }
 
   if (evidence.length === 0) {
     evidence.push("No clear buying authority signal found.");
   }
 
-  if (score < 4) {
+  if (score < 5) {
     missingInfo.push("Economic buyer");
     missingInfo.push("Decision-making committee");
+    missingInfo.push("Decision process and approval path");
   }
 
   return {
@@ -510,34 +518,51 @@ function scoreTimeline(parsedLead: ParsedLeadSignals, signalText: string) {
     score = 5;
     evidence.push("Email has critical urgency language.");
   } else if (parsedLead.urgency === "high") {
-    score = 4;
+    score = 3;
     evidence.push("Email has near-term timing language.");
   } else if (parsedLead.urgency === "medium") {
-    score = 3;
+    score = 2;
     evidence.push("Email indicates active evaluation.");
   }
 
-  if (
+  const hasSoftPilotSignal =
+    includesAny(signalText, [
+      "pilot",
+      "poc",
+      "evaluate",
+      "evaluation",
+    ]);
+  const hasExplicitTimingSignal =
     includesAny(signalText, [
       "this quarter",
       "this month",
       "asap",
       "urgent",
-      "pilot",
-      "poc",
       "deadline",
       "rfp",
-    ])
-  ) {
-    score += 1;
-    evidence.push("Email includes timeline, pilot, or deadline language.");
+      "go live",
+      "go-live",
+      "by q1",
+      "by q2",
+      "by q3",
+      "by q4",
+    ]) || /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i.test(signalText);
+
+  if (hasSoftPilotSignal) {
+    score = Math.max(score, 2);
+    evidence.push("Email includes pilot or evaluation language, but no target date is confirmed.");
+  }
+
+  if (hasExplicitTimingSignal) {
+    score += 2;
+    evidence.push("Email includes explicit timeline, urgency, or deadline language.");
   }
 
   if (evidence.length === 0) {
     evidence.push("No explicit timeline signal found.");
   }
 
-  if (score < 4) {
+  if (score < 5) {
     missingInfo.push("Target go-live date");
     missingInfo.push("Evaluation or procurement timeline");
   }
@@ -688,14 +713,25 @@ function inferUrgency(searchText: string): LeadUrgency {
       "deadline",
       "rfp",
       "tender",
-      "pilot",
-      "poc",
+      "pilot this",
+      "poc this",
+      "go live",
+      "go-live",
     ])
   ) {
     return "high";
   }
 
-  if (includesAny(searchText, ["demo", "evaluate", "evaluating", "looking for"])) {
+  if (
+    includesAny(searchText, [
+      "demo",
+      "evaluate",
+      "evaluating",
+      "looking for",
+      "pilot",
+      "poc",
+    ])
+  ) {
     return "medium";
   }
 

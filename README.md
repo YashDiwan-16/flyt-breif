@@ -54,6 +54,22 @@ Lead analysis uses research adapters from `packages/ai`. The default `RESEARCH_A
 
 Local admin login defaults to `admin@flytbase.com` / `flytbdr-admin`. Override `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_TOKEN` before sharing the app outside a local demo.
 
+## Lead Email Notifications
+
+New contact form submissions can send a server-side Nodemailer alert after the lead is analyzed and stored. Set these in `apps/web/.env.local`:
+
+```bash
+LEAD_NOTIFICATION_TO=you@example.com
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+SMTP_FROM="FlytBDR Copilot <no-reply@example.com>"
+```
+
+If SMTP is not configured, submissions still work and the notification status is marked as skipped. If SMTP fails, the public user still sees the thank-you state and the admin queue still receives the lead.
+
 ## Workflow Script
 
 1. Start the app with `pnpm run dev:web` and open [http://localhost:3001](http://localhost:3001).

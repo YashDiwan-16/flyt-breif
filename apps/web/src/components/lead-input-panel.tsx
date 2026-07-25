@@ -164,8 +164,8 @@ export function LeadInputPanel({
               <CheckCircle2 className="size-3.5" />
               Submission received
             </div>
-            <h2 className="mt-1 text-sm font-semibold">Thank You</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="mt-1 text-xl font-semibold">Thank You</h2>
+            <p className="text-sm leading-5 text-muted-foreground">
               The internal dashboard now has the lead brief.
             </p>
           </div>
@@ -235,8 +235,8 @@ export function LeadInputPanel({
             <Send className="size-3.5" />
             Live lead intake
           </div>
-          <h2 className="mt-1 text-sm font-semibold">Inbound Lead</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="mt-1 text-xl font-semibold">Inbound Lead</h2>
+          <p className="text-sm leading-5 text-muted-foreground">
             Submit the inbound request for internal qualification
           </p>
         </div>

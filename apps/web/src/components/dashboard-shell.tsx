@@ -35,7 +35,7 @@ export function DashboardShell() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex min-h-[84px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#242421] px-4 py-3 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] md:px-6">
+        <header className="flex min-h-[120px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#242421] px-4 py-5 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] md:px-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full border border-[#1f5d9c]/45 bg-[#062d5f] px-2 py-0.5 text-[10px] font-medium uppercase tracking-normal text-[#b8d7ff]">
@@ -47,10 +47,10 @@ export function DashboardShell() {
                 Inbound BDR challenge
               </span>
             </div>
-            <h1 className="mt-1 truncate text-lg font-semibold md:text-2xl">
+            <h1 className="mt-3 truncate text-4xl font-bold leading-none">
               FlytBDR Copilot
             </h1>
-            <p className="mt-1 max-w-2xl truncate text-xs text-muted-foreground">
+            <p className="mt-3 max-w-3xl truncate text-lg font-semibold leading-7 text-muted-foreground">
               Review contact form submissions, qualification, account research,
               FlytBase proof, GTM motion, outreach, and AE handoff.
             </p>

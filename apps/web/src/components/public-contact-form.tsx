@@ -71,10 +71,10 @@ const publicFieldCopy: Record<
 };
 
 const formControlClassName =
-  "h-[72px] rounded-[14px] border-[#45443f] bg-[#292927] px-6 text-2xl font-semibold text-[#f7f6f2] shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] placeholder:text-[#777672] focus-visible:border-[#6ca8ff] focus-visible:ring-2 focus-visible:ring-[#0b4f9c]/45 disabled:bg-[#242421] disabled:opacity-60 sm:h-[86px] sm:px-7 sm:text-[34px] md:text-[38px]";
+  "h-16 rounded-[14px] border-[#45443f] bg-[#292927] px-5 text-xl font-semibold text-[#f7f6f2] shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] placeholder:text-[#777672] focus-visible:border-[#6ca8ff] focus-visible:ring-2 focus-visible:ring-[#0b4f9c]/45 disabled:bg-[#242421] disabled:opacity-60 md:text-xl";
 
 const labelClassName =
-  "text-[21px] font-semibold leading-none text-[#c9c7c1] sm:text-[28px]";
+  "text-xl font-semibold leading-none text-[#c9c7c1]";
 
 export function PublicContactForm() {
   const [formState, setFormState] = useState<LeadInput>(emptyLeadInput);
@@ -150,7 +150,7 @@ export function PublicContactForm() {
 
   return (
     <main className="min-h-svh bg-[#292927] text-[#f7f6f2]">
-      <div className="mx-auto flex min-h-svh w-full max-w-[1024px] flex-col px-5 py-6 sm:px-8 md:py-10">
+      <div className="mx-auto flex min-h-svh w-full max-w-[900px] flex-col px-5 py-6 sm:px-8 md:py-10">
         <div className="flex justify-end">
           <Link
             href="/admin"
@@ -160,25 +160,25 @@ export function PublicContactForm() {
           </Link>
         </div>
 
-        <section className="mx-auto flex w-full max-w-[876px] flex-1 flex-col justify-center py-8">
+        <section className="mx-auto flex w-full max-w-[720px] flex-1 flex-col justify-center py-8">
           {isSubmitted ? (
             <ThankYouState />
           ) : (
             <>
               <header className="text-center">
-                <div className="mx-auto flex size-24 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
-                  <Drone className="size-12" strokeWidth={2.5} />
+                <div className="mx-auto flex size-20 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
+                  <Drone className="size-10" strokeWidth={2.5} />
                 </div>
-                <h1 className="mt-9 text-4xl font-bold leading-none tracking-normal text-[#faf9f6] sm:text-[44px]">
+                <h1 className="mt-8 text-4xl font-bold leading-none tracking-normal text-[#faf9f6]">
                   Talk to our team
                 </h1>
-                <p className="mt-5 text-2xl font-semibold leading-snug text-[#c9c7c1] sm:text-[31px]">
+                <p className="mt-4 text-lg font-semibold leading-7 text-[#c9c7c1]">
                   Tell us about your drone ops - we&apos;ll follow up shortly.
                 </p>
               </header>
 
-              <form className="mt-16" onSubmit={handleSubmit} noValidate>
-                <div className="grid gap-x-7 gap-y-9 md:grid-cols-2">
+              <form className="mt-10" onSubmit={handleSubmit} noValidate>
+                <div className="grid gap-x-6 gap-y-6 md:grid-cols-2">
                   {publicFieldOrder.map((fieldId) => {
                     const field = getLeadInputField(fieldId);
                     const copy = publicFieldCopy[fieldId];
@@ -218,7 +218,7 @@ export function PublicContactForm() {
                             }
                             aria-describedby={describedBy || undefined}
                             aria-invalid={Boolean(error)}
-                            className={`${formControlClassName} min-h-[168px] resize-y py-6 leading-tight`}
+                            className={`${formControlClassName} min-h-36 resize-y py-5 leading-snug`}
                             disabled={isSubmitting}
                             required
                           />
@@ -246,7 +246,7 @@ export function PublicContactForm() {
                                 </option>
                               ))}
                             </select>
-                            <ChevronDown className="pointer-events-none absolute right-5 top-1/2 size-7 -translate-y-1/2 text-[#f7f6f2]" />
+                            <ChevronDown className="pointer-events-none absolute right-5 top-1/2 size-5 -translate-y-1/2 text-[#f7f6f2]" />
                           </div>
                         ) : (
                           <Input
@@ -308,7 +308,7 @@ export function PublicContactForm() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="mt-12 h-20 w-full rounded-[16px] bg-[#fafafa] text-[30px] font-semibold text-[#060606] shadow-[0_18px_38px_rgba(0,0,0,0.22)] hover:bg-white sm:text-[34px]"
+                  className="mt-10 h-16 w-full rounded-[16px] bg-[#fafafa] text-xl font-semibold text-[#060606] shadow-[0_18px_38px_rgba(0,0,0,0.22)] hover:bg-white"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -320,7 +320,7 @@ export function PublicContactForm() {
                     "Submit"
                   )}
                 </Button>
-                <p className="mt-8 text-center text-xl font-semibold leading-snug text-[#928f89]">
+                <p className="mt-8 text-center text-base font-semibold leading-6 text-[#928f89]">
                   No account needed. We&apos;ll reach out at the email you provide.
                 </p>
               </form>
@@ -335,19 +335,19 @@ export function PublicContactForm() {
 function ThankYouState() {
   return (
     <div className="flex min-h-[620px] flex-col items-center justify-center text-center">
-      <div className="flex size-24 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
-        <CheckCircle2 className="size-12" strokeWidth={2.5} />
+      <div className="flex size-20 items-center justify-center rounded-[18px] bg-[#062d5f] text-[#7db7ff] shadow-[0_18px_46px_rgba(0,0,0,0.24)]">
+        <CheckCircle2 className="size-10" strokeWidth={2.5} />
       </div>
-      <h2 className="mt-9 text-4xl font-bold leading-none text-[#faf9f6] sm:text-[44px]">
+      <h2 className="mt-8 text-4xl font-bold leading-none text-[#faf9f6]">
         Thank you for submitting.
       </h2>
-      <p className="mt-5 max-w-2xl text-2xl font-semibold leading-snug text-[#c9c7c1] sm:text-[31px]">
+      <p className="mt-4 max-w-2xl text-lg font-semibold leading-7 text-[#c9c7c1]">
         Your request has been sent to the FlytBase team. We&apos;ll review the
         drone operations context and follow up shortly.
       </p>
       <Button
         type="button"
-        className="mt-12 h-16 rounded-[16px] bg-[#fafafa] px-10 text-2xl font-semibold text-[#060606] hover:bg-white"
+        className="mt-10 h-16 rounded-[16px] bg-[#fafafa] px-10 text-xl font-semibold text-[#060606] hover:bg-white"
         onClick={() => window.location.reload()}
       >
         Submit another request

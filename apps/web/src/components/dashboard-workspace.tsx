@@ -88,8 +88,8 @@ export function DashboardWorkspace() {
               <Inbox className="size-3.5" />
               Contact submissions
             </div>
-            <h2 className="mt-1 text-sm font-semibold">Admin Queue</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="mt-1 text-xl font-semibold">Admin Queue</h2>
+            <p className="text-sm leading-5 text-muted-foreground">
               Review leads submitted from the public contact form
             </p>
           </div>
