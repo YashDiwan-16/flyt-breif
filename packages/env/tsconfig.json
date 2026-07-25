@@ -1,0 +1,3 @@
+{
+  "extends": "@flyt-breif/config/tsconfig.base.json"
+}

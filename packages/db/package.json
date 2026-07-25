@@ -1,0 +1,23 @@
+{
+  "name": "@flyt-breif/db",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@flyt-breif/env": "workspace:*",
+    "dotenv": "catalog:",
+    "mongoose": "^9.7.3",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@flyt-breif/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
