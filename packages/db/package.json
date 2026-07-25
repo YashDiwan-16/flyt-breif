@@ -12,6 +12,7 @@
   "scripts": {},
   "dependencies": {
     "@flyt-breif/core": "workspace:*",
+    "@flyt-breif/data": "workspace:*",
     "@flyt-breif/env": "workspace:*",
     "dotenv": "catalog:",
     "mongoose": "^9.7.3",

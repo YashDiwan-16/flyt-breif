@@ -1,0 +1,19 @@
+{
+  "name": "@flyt-breif/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@flyt-breif/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

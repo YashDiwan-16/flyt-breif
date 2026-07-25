@@ -13,6 +13,7 @@ flyt-breif/
 │   └── server/       # Existing backend scaffold, not used by the shell yet
 ├── packages/
 │   ├── core/         # Shared FlytBDR domain types and constants
+│   ├── data/         # Case-study retrieval context and matching helpers
 │   ├── ui/           # Shared UI primitives and Tailwind theme
 │   ├── api/          # Existing API scaffold
 │   ├── auth/         # Existing auth scaffold
@@ -45,7 +46,7 @@ AI calls are kept server-side. The initial health check lives at `GET /api/healt
 
 ## Data Model
 
-MongoDB data is scoped to the `flytbreif` database. Shared collection names live in `packages/core/src/database.ts`, and AI analysis responses should validate against `leadAnalysisSchema` before persistence.
+MongoDB data is scoped to the `flytbreif` database. Shared collection names live in `packages/core/src/database.ts`, AI analysis responses should validate against `leadAnalysisSchema` before persistence, and case-study retrieval context lives in `packages/data`.
 
 ## Scripts
 

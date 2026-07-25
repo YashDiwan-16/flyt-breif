@@ -1,9 +1,9 @@
 import {
   flytbreifCollections,
-  type FlytBaseCaseStudy,
   type LeadAnalysis,
   type LeadInput,
 } from "@flyt-breif/core";
+import type { FlytBaseCaseStudyKnowledgeBaseEntry } from "@flyt-breif/data";
 import mongoose, { type Model } from "mongoose";
 
 const { Schema, model, models } = mongoose;
@@ -33,7 +33,7 @@ export type LeadAnalysisRecord = LeadAnalysis & {
   updatedAt: Date;
 };
 
-export type CaseStudyRecord = FlytBaseCaseStudy & {
+export type CaseStudyRecord = FlytBaseCaseStudyKnowledgeBaseEntry & {
   createdAt: Date;
   updatedAt: Date;
 };
@@ -87,12 +87,13 @@ const caseStudySchema = new Schema<CaseStudyRecord>(
     id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     industry: { type: String, required: true },
-    region: { type: String, required: true },
     useCases: { type: [String], required: true, default: [] },
     painPoints: { type: [String], required: true, default: [] },
+    keywords: { type: [String], required: true, default: [] },
     proofPoints: { type: [String], required: true, default: [] },
     recommendedEmailLine: { type: String, required: true },
     url: { type: String, required: true },
+    searchText: { type: String, required: true },
   },
   {
     collection: flytbreifCollections.caseStudies,
@@ -101,7 +102,8 @@ const caseStudySchema = new Schema<CaseStudyRecord>(
   },
 );
 caseStudySchema.index({ industry: 1 });
-caseStudySchema.index({ region: 1 });
+caseStudySchema.index({ keywords: 1 });
+caseStudySchema.index({ useCases: 1 });
 
 const LeadInputModel =
   (models.LeadInput as Model<LeadInputRecord> | undefined) ??

@@ -24,6 +24,10 @@ _Avoid_: Company lookup, enrichment dump
 The FlytBase customer proof point selected as the closest match for the lead's industry, use case, and pain points.
 _Avoid_: Reference, example customer
 
+**Case Study Knowledge Base**:
+The retrieval context of FlytBase customer proof points used by the AI and matching engine.
+_Avoid_: Hardcoded response, static output
+
 **GTM Motion**:
 The recommended sales motion for pursuing the lead, including persona, positioning, offer, and next action.
 _Avoid_: Sales recommendation, play
