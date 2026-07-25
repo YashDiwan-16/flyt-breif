@@ -3,7 +3,7 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 
-import type { StoredLeadSubmission } from "@/lib/server/lead-submissions";
+import type { StoredLeadSubmission } from "@/lib/lead-submissions";
 
 export type LeadNotificationStatus =
   | { status: "sent"; messageId?: string }

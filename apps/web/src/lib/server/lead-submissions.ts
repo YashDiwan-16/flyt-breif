@@ -1,44 +1,83 @@
-import type { LeadAnalysis, LeadInput } from "@flyt-breif/core";
+import "server-only";
 
-export type StoredLeadSubmission = {
-  id: string;
-  submittedAt: string;
-  leadInput: LeadInput;
-  analysis: LeadAnalysis;
-  analysisStatus: "ai" | "fallback";
-  modelId: string;
-  statusMessage?: string;
-};
+import { LeadAnalysisModel, LeadInputModel } from "@flyt-breif/db";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var flytBdrLeadSubmissions: StoredLeadSubmission[] | undefined;
-}
+import type { StoredLeadSubmission } from "@/lib/lead-submissions";
 
 const MAX_STORED_SUBMISSIONS = 50;
 
-export function storeLeadSubmission(
+export async function storeLeadSubmission(
   submission: Omit<StoredLeadSubmission, "id" | "submittedAt">,
 ) {
-  const storedSubmission: StoredLeadSubmission = {
+  const leadInputRecord = await LeadInputModel.create(submission.leadInput);
+  const analysisRecord = await LeadAnalysisModel.create({
+    ...submission.analysis,
+    analysisStatus: submission.analysisStatus,
+    leadInputId: leadInputRecord._id,
+    modelId: submission.modelId,
+    statusMessage: submission.statusMessage,
+  });
+
+  return {
     ...submission,
-    id: crypto.randomUUID(),
-    submittedAt: new Date().toISOString(),
+    id: analysisRecord._id.toString(),
+    submittedAt: analysisRecord.createdAt.toISOString(),
   };
-  const submissions = getMutableLeadSubmissions();
-
-  submissions.unshift(storedSubmission);
-  submissions.splice(MAX_STORED_SUBMISSIONS);
-
-  return storedSubmission;
 }
 
-export function listLeadSubmissions() {
-  return [...getMutableLeadSubmissions()];
-}
+export async function listLeadSubmissions(): Promise<StoredLeadSubmission[]> {
+  const analysisRecords = await LeadAnalysisModel.find()
+    .sort({ createdAt: -1 })
+    .limit(MAX_STORED_SUBMISSIONS)
+    .lean();
 
-function getMutableLeadSubmissions() {
-  globalThis.flytBdrLeadSubmissions ??= [];
+  const leadInputIds = analysisRecords
+    .map((record) => record.leadInputId)
+    .filter(Boolean);
+  const leadInputRecords = await LeadInputModel.find({
+    _id: { $in: leadInputIds },
+  }).lean();
+  const leadInputsById = new Map(
+    leadInputRecords.map((record) => [record._id.toString(), record]),
+  );
 
-  return globalThis.flytBdrLeadSubmissions;
+  return analysisRecords.flatMap((record) => {
+    const leadInputId = record.leadInputId?.toString();
+    const leadInput = leadInputId ? leadInputsById.get(leadInputId) : undefined;
+
+    if (!leadInput) {
+      return [];
+    }
+
+    const {
+      _id,
+      __v: _analysisVersion,
+      analysisStatus,
+      createdAt,
+      leadInputId: _leadInputId,
+      modelId,
+      statusMessage,
+      updatedAt: _updatedAt,
+      ...analysis
+    } = record;
+    const {
+      _id: _leadInputRecordId,
+      __v: _leadInputVersion,
+      createdAt: _leadInputCreatedAt,
+      updatedAt: _leadInputUpdatedAt,
+      ...leadInputData
+    } = leadInput;
+
+    return [
+      {
+        analysis,
+        analysisStatus,
+        id: _id.toString(),
+        leadInput: leadInputData,
+        modelId,
+        statusMessage,
+        submittedAt: createdAt.toISOString(),
+      },
+    ];
+  });
 }

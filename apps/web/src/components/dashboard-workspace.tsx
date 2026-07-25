@@ -1,7 +1,7 @@
 "use client";
 
 import { AnalysisPanel, type AnalysisPanelState } from "@/components/analysis-panel";
-import type { StoredLeadSubmission } from "@/lib/server/lead-submissions";
+import type { StoredLeadSubmission } from "@/lib/lead-submissions";
 import { Button } from "@flyt-breif/ui/components/button";
 import {
   AlertCircle,

@@ -31,7 +31,8 @@ flyt-breif/
 - FlytBase case-study retrieval context in `packages/data`
 - Server-side AI analysis routes in `apps/web`
 - Server-side public website research from the submitted company URL, with an adapter path for deeper web-search providers later
-- Prototype admin login is client-side only; submitted analyses are stored in an in-memory server queue during the local session
+- Better Auth admin login backed by MongoDB
+- Contact submissions and generated analyses persisted in MongoDB
 
 ## Getting Started
 
@@ -41,6 +42,8 @@ pnpm run dev:web
 ```
 
 Open [http://localhost:3001/contact-us](http://localhost:3001/contact-us) for the public form or [http://localhost:3001/admin](http://localhost:3001/admin) for the admin cockpit.
+
+Local development defaults to `mongodb://127.0.0.1:27017/flytbase`. Start MongoDB locally or set `DATABASE_URL` in `apps/web/.env.local` before submitting leads or logging in.
 
 ## AI Configuration
 
@@ -52,7 +55,7 @@ For workflow safety, `POST /api/analyze-lead` returns a deterministic, schema-va
 
 Lead analysis uses research adapters from `packages/ai`. The default `RESEARCH_ADAPTER=web` fetches public website context from the submitted company URL on the server, then labels broader account facts as unknown or inferred when no search provider is connected. Set `RESEARCH_ADAPTER=demo` only when you want inference-only research. The web adapter is ready for Tavily, Exa, Serper, Firecrawl, or Google Custom Search integration later.
 
-Local admin login defaults to `admin@flytbase.com` / `flytbdr-admin`. Override `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_TOKEN` before sharing the app outside a local demo.
+Admin login uses Better Auth. On a fresh database, `/admin` shows a one-time first-admin setup screen. After the first user exists in the `users` collection, `/admin` becomes login-only.
 
 ## Lead Email Notifications
 
@@ -92,7 +95,7 @@ Design direction: premium internal sales cockpit, dense but readable, enterprise
 
 ## Data Model
 
-MongoDB data is scoped to the `flytbreif` database. Shared collection names live in `packages/core/src/database.ts`, AI analysis responses should validate against `leadAnalysisSchema` before persistence, and case-study retrieval context lives in `packages/data`.
+MongoDB data is scoped to the `flytbase` database. Shared collection names live in `packages/core/src/database.ts`, AI analysis responses validate against `leadAnalysisSchema` before persistence, and case-study retrieval context lives in `packages/data`.
 
 ## Scripts
 

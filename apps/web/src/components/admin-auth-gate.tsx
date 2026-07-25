@@ -7,37 +7,42 @@ import { AlertCircle, Drone, LockKeyhole, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
-const ADMIN_SESSION_KEY = "flytbdr-admin-session";
+import { authClient } from "@/lib/auth-client";
 
 export function AdminAuthGate({ children }: { children: ReactNode }) {
+  const session = authClient.useSession();
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isBootstrapRequired, setIsBootstrapRequired] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void checkExistingSession();
-  }, []);
+    if (session.isPending) {
+      return;
+    }
 
-  async function checkExistingSession() {
-    if (sessionStorage.getItem(ADMIN_SESSION_KEY) !== "active") {
+    if (session.data?.user) {
       setHasHydrated(true);
       return;
     }
 
+    void loadBootstrapStatus();
+  }, [session.data?.user, session.isPending]);
+
+  async function loadBootstrapStatus() {
     try {
-      const response = await fetch("/api/admin/leads", {
+      const response = await fetch("/api/admin/bootstrap", {
         headers: {
           Accept: "application/json",
         },
       });
+      const payload: unknown = await response.json();
 
-      if (response.ok) {
-        setIsAuthenticated(true);
-      } else {
-        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      if (response.ok && isBootstrapStatus(payload)) {
+        setIsBootstrapRequired(payload.bootstrapRequired);
       }
     } finally {
       setHasHydrated(true);
@@ -47,8 +52,13 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.includes("@") || password.trim().length < 6) {
-      setError("Enter an admin email and a password with at least 6 characters.");
+    if (!email.includes("@") || password.trim().length < 8) {
+      setError("Enter an admin email and a password with at least 8 characters.");
+      return;
+    }
+
+    if (isBootstrapRequired && !name.trim()) {
+      setError("Enter the admin name for the first account.");
       return;
     }
 
@@ -56,22 +66,20 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/login", {
-        body: JSON.stringify({ email, password }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const payload: unknown = await response.json();
+      const result = isBootstrapRequired
+        ? await createFirstAdmin()
+        : await authClient.signIn.email({
+            email,
+            password,
+            rememberMe: true,
+          });
 
-      if (!response.ok || !isLoginSuccess(payload)) {
-        setError(getLoginError(payload));
+      if (result.error) {
+        setError(result.error.message || "Admin login failed.");
         return;
       }
 
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "active");
-      setIsAuthenticated(true);
+      await session.refetch();
     } catch (loginError) {
       setError(
         loginError instanceof Error ? loginError.message : "Admin login failed.",
@@ -81,7 +89,36 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
     }
   }
 
-  if (hasHydrated && isAuthenticated) {
+  async function createFirstAdmin() {
+    const response = await fetch("/api/admin/bootstrap", {
+      body: JSON.stringify({
+        email,
+        name: name.trim(),
+        password,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    const payload: unknown = await response.json();
+
+    if (!response.ok || !isBootstrapSuccess(payload)) {
+      return {
+        data: null,
+        error: {
+          message: getLoginError(payload, "Could not create the first admin."),
+        },
+      };
+    }
+
+    return {
+      data: payload,
+      error: null,
+    };
+  }
+
+  if (hasHydrated && session.data?.user) {
     return <>{children}</>;
   }
 
@@ -94,18 +131,44 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
           </div>
           <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[#45443f] bg-[#242421] px-3 py-1 text-[11px] font-semibold uppercase tracking-normal text-[#b8b6b0]">
             <LockKeyhole className="size-3.5" />
-            Admin only
+            {isBootstrapRequired ? "First admin setup" : "Admin only"}
           </div>
           <h1 className="mt-4 text-4xl font-bold leading-none text-[#faf9f6]">
-            FlytBDR Admin Login
+            {isBootstrapRequired
+              ? "Create FlytBDR Admin"
+              : "FlytBDR Admin Login"}
           </h1>
           <p className="mt-4 text-lg font-semibold leading-7 text-[#c9c7c1]">
-            Review submitted lead intelligence, AE handoff briefs, and generated
-            outreach.
+            {isBootstrapRequired
+              ? "Set up the first database-backed admin account for this workspace."
+              : "Review submitted lead intelligence, AE handoff briefs, and generated outreach."}
           </p>
         </div>
 
         <form className="mt-10 space-y-6" onSubmit={handleSubmit} noValidate>
+          {isBootstrapRequired ? (
+            <div className="space-y-3">
+              <Label
+                htmlFor="admin-name"
+                className="text-xl font-semibold text-[#c9c7c1]"
+              >
+                Admin name
+              </Label>
+              <Input
+                id="admin-name"
+                type="text"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setError("");
+                }}
+                placeholder="FlytBase Admin"
+                className="h-16 rounded-[14px] border-[#45443f] bg-[#292927] px-5 text-xl font-semibold text-[#f7f6f2] placeholder:text-[#777672] focus-visible:border-[#6ca8ff] focus-visible:ring-2 focus-visible:ring-[#0b4f9c]/45 md:text-xl"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+          ) : null}
           <div className="space-y-3">
             <Label
               htmlFor="admin-email"
@@ -166,7 +229,13 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
             disabled={isSubmitting}
           >
             {isSubmitting ? <LockKeyhole /> : <LogIn />}
-            {isSubmitting ? "Checking credentials" : "Continue to admin cockpit"}
+            {isSubmitting
+              ? isBootstrapRequired
+                ? "Creating admin"
+                : "Checking credentials"
+              : isBootstrapRequired
+                ? "Create admin account"
+                : "Continue to admin cockpit"}
           </Button>
 
           <Link
@@ -181,14 +250,24 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
   );
 }
 
-function isLoginSuccess(value: unknown) {
+function isBootstrapStatus(
+  value: unknown,
+): value is { ok: true; bootstrapRequired: boolean } {
+  return (
+    isRecord(value) &&
+    value.ok === true &&
+    typeof value.bootstrapRequired === "boolean"
+  );
+}
+
+function isBootstrapSuccess(value: unknown) {
   return isRecord(value) && value.ok === true;
 }
 
-function getLoginError(value: unknown) {
+function getLoginError(value: unknown, fallback = "Admin login failed.") {
   return isRecord(value) && typeof value.error === "string"
     ? value.error
-    : "Admin login failed.";
+    : fallback;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

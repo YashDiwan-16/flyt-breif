@@ -62,7 +62,7 @@ export function DashboardShell() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs font-medium shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
               <Database className="size-3.5 text-muted-foreground" />
-              flytbreif workspace
+              flytbase workspace
             </div>
           </div>
         </header>

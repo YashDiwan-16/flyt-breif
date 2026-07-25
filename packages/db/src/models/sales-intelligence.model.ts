@@ -1,5 +1,5 @@
 import {
-  flytbreifCollections,
+  flytbaseCollections,
   type LeadAnalysis,
   type LeadInput,
 } from "@flyt-breif/core";
@@ -28,7 +28,10 @@ export type LeadInputRecord = LeadInput & {
 };
 
 export type LeadAnalysisRecord = LeadAnalysis & {
+  analysisStatus: "ai" | "fallback";
   leadInputId?: mongoose.Types.ObjectId;
+  modelId: string;
+  statusMessage?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,7 +50,7 @@ const leadInputSchema = new Schema<LeadInputRecord>(
     region: { type: String, required: true },
   },
   {
-    collection: flytbreifCollections.leadInputs,
+    collection: flytbaseCollections.leadInputs,
     strict: "throw",
     timestamps: true,
   },
@@ -59,6 +62,14 @@ leadInputSchema.index({ createdAt: -1 });
 const leadAnalysisSchema = new Schema<LeadAnalysisRecord>(
   {
     leadInputId: { type: ObjectId, ref: "LeadInput" },
+    analysisStatus: {
+      type: String,
+      required: true,
+      enum: ["ai", "fallback"],
+      default: "fallback",
+    },
+    modelId: { type: String, required: true },
+    statusMessage: { type: String },
     leadSnapshot: { type: Mixed, required: true },
     parsedSignals: { type: Mixed, required: true },
     qualification: { type: Mixed, required: true },
@@ -72,12 +83,13 @@ const leadAnalysisSchema = new Schema<LeadAnalysisRecord>(
     warnings: { type: [String], required: true, default: [] },
   },
   {
-    collection: flytbreifCollections.leadAnalyses,
+    collection: flytbaseCollections.leadAnalyses,
     strict: "throw",
     timestamps: true,
   },
 );
 leadAnalysisSchema.index({ leadInputId: 1 });
+leadAnalysisSchema.index({ analysisStatus: 1 });
 leadAnalysisSchema.index({ "leadSnapshot.leadScore": -1 });
 leadAnalysisSchema.index({ "leadSnapshot.qualificationLabel": 1 });
 leadAnalysisSchema.index({ createdAt: -1 });
@@ -96,7 +108,7 @@ const caseStudySchema = new Schema<CaseStudyRecord>(
     searchText: { type: String, required: true },
   },
   {
-    collection: flytbreifCollections.caseStudies,
+    collection: flytbaseCollections.caseStudies,
     strict: "throw",
     timestamps: true,
   },

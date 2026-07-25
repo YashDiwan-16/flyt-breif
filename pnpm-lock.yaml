@@ -146,15 +146,24 @@ importers:
       '@flyt-breif/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@flyt-breif/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@flyt-breif/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@flyt-breif/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@flyt-breif/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       ai:
         specifier: ^7.0.37
         version: 7.0.37(zod@4.4.3)
+      better-auth:
+        specifier: 'catalog:'
+        version: 1.6.23(mongodb@7.5.0)(next@16.2.11(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       lucide-react:
         specifier: 'catalog:'
         version: 1.26.0(react@19.2.8)
@@ -263,6 +272,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@flyt-breif/core':
+        specifier: workspace:*
+        version: link:../core
       '@flyt-breif/db':
         specifier: workspace:*
         version: link:../db

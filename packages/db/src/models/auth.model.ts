@@ -1,7 +1,7 @@
-import { flytbreifCollections } from "@flyt-breif/core";
-import mongoose from "mongoose";
+import { flytbaseCollections } from "@flyt-breif/core";
+import mongoose, { type Model } from "mongoose";
 
-const { Schema, model } = mongoose;
+const { Schema, model, models } = mongoose;
 const { ObjectId } = Schema.Types;
 
 const userSchema = new Schema(
@@ -14,7 +14,7 @@ const userSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: flytbreifCollections.users },
+  { collection: flytbaseCollections.users },
 );
 
 const sessionSchema = new Schema(
@@ -28,7 +28,7 @@ const sessionSchema = new Schema(
     userAgent: { type: String },
     userId: { type: ObjectId, ref: "User", required: true },
   },
-  { collection: flytbreifCollections.sessions },
+  { collection: flytbaseCollections.sessions },
 );
 sessionSchema.index({ userId: 1 });
 
@@ -48,7 +48,7 @@ const accountSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: flytbreifCollections.accounts },
+  { collection: flytbaseCollections.accounts },
 );
 accountSchema.index({ userId: 1 });
 
@@ -61,13 +61,20 @@ const verificationSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: flytbreifCollections.verifications },
+  { collection: flytbaseCollections.verifications },
 );
 verificationSchema.index({ identifier: 1 });
 
-const User = model("User", userSchema);
-const Session = model("Session", sessionSchema);
-const Account = model("Account", accountSchema);
-const Verification = model("Verification", verificationSchema);
+const User =
+  (models.User as Model<unknown> | undefined) ?? model("User", userSchema);
+const Session =
+  (models.Session as Model<unknown> | undefined) ??
+  model("Session", sessionSchema);
+const Account =
+  (models.Account as Model<unknown> | undefined) ??
+  model("Account", accountSchema);
+const Verification =
+  (models.Verification as Model<unknown> | undefined) ??
+  model("Verification", verificationSchema);
 
 export { User, Session, Account, Verification };

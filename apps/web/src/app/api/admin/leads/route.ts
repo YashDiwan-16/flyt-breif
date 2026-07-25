@@ -1,12 +1,17 @@
-import { isAdminRequestAuthenticated } from "@/lib/server/admin-auth";
-import { listLeadSubmissions } from "@/lib/server/lead-submissions";
+import { auth } from "@flyt-breif/auth";
 import { NextResponse } from "next/server";
+
+import { listLeadSubmissions } from "@/lib/server/lead-submissions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export function GET(request: Request) {
-  if (!isAdminRequestAuthenticated(request)) {
+export async function GET(request: Request) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) {
     return NextResponse.json(
       {
         ok: false,
@@ -24,7 +29,7 @@ export function GET(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      leads: listLeadSubmissions(),
+      leads: await listLeadSubmissions(),
     },
     {
       headers: {

@@ -12,9 +12,12 @@
   "dependencies": {
     "@ai-sdk/google": "^4.0.24",
     "@flyt-breif/ai": "workspace:*",
+    "@flyt-breif/auth": "workspace:*",
     "@flyt-breif/core": "workspace:*",
+    "@flyt-breif/db": "workspace:*",
     "@flyt-breif/ui": "workspace:*",
     "ai": "^7.0.37",
+    "better-auth": "catalog:",
     "lucide-react": "catalog:",
     "next": "^16.2.11",
     "nodemailer": "^9.0.3",

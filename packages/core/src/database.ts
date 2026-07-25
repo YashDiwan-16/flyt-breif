@@ -1,6 +1,6 @@
-export const FLYTBREIF_DATABASE_NAME = "flytbreif";
+export const FLYTBASE_DATABASE_NAME = "flytbase";
 
-export const flytbreifCollections = {
+export const flytbaseCollections = {
   users: "users",
   sessions: "sessions",
   accounts: "accounts",
@@ -16,6 +16,11 @@ export const flytbreifCollections = {
   aeHandoffSummaries: "ae_handoff_summaries",
 } as const;
 
-export type FlytbreifCollectionKey = keyof typeof flytbreifCollections;
-export type FlytbreifCollectionName =
-  (typeof flytbreifCollections)[FlytbreifCollectionKey];
+export type FlytbaseCollectionKey = keyof typeof flytbaseCollections;
+export type FlytbaseCollectionName =
+  (typeof flytbaseCollections)[FlytbaseCollectionKey];
+
+export const FLYTBREIF_DATABASE_NAME = FLYTBASE_DATABASE_NAME;
+export const flytbreifCollections = flytbaseCollections;
+export type FlytbreifCollectionKey = FlytbaseCollectionKey;
+export type FlytbreifCollectionName = FlytbaseCollectionName;
