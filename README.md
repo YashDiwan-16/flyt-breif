@@ -56,24 +56,17 @@ Local admin login defaults to `admin@flytbase.com` / `flytbdr-admin`. Override `
 
 ## Lead Email Notifications
 
-New contact form submissions can send a server-side Nodemailer alert after the lead is analyzed and stored. For the recipient, set your inbox email:
+New contact form submissions send a server-side Nodemailer alert after the lead is analyzed and stored. Configure Gmail with these server-only variables in `apps/web/.env.local`:
 
 ```bash
-LEAD_NOTIFICATION_EMAIL=you@example.com
+EMAIL_SERVER_HOST=smtp.gmail.com
+EMAIL_SERVER_PORT=465
+EMAIL_SERVER_USER=your-gmail-address@gmail.com
+EMAIL_SERVER_PASSWORD=your-gmail-app-password
+EMAIL_ADMIN=your-admin-inbox@gmail.com
 ```
 
-Actual delivery still needs a server-side sender transport. Keep that hidden in deployment secrets:
-
-```bash
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-smtp-user
-SMTP_PASS=your-smtp-password
-SMTP_FROM="FlytBDR Copilot <no-reply@example.com>"
-```
-
-If delivery transport is not configured, submissions still work and the notification status is marked as skipped. If delivery fails, the public user still sees the thank-you state and the admin queue still receives the lead.
+If email config is missing or delivery fails, the public user still sees the thank-you state and the admin queue still receives the lead. Gmail app passwords are usually shown in chunks; the app strips spaces before sending.
 
 ## Workflow Script
 

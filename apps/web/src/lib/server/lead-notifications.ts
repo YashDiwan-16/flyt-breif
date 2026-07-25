@@ -22,18 +22,11 @@ const optionalEnvString = z.preprocess(
 );
 
 const notificationEnvSchema = z.object({
-  ADMIN_EMAIL: optionalEnvString,
-  LEAD_NOTIFICATION_EMAIL: optionalEnvString,
-  LEAD_NOTIFICATION_TO: optionalEnvString,
-  SMTP_FROM: optionalEnvString,
-  SMTP_HOST: optionalEnvString,
-  SMTP_PASS: optionalEnvString,
-  SMTP_PORT: z.coerce.number().int().positive().optional(),
-  SMTP_SECURE: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((value) => value === "true"),
-  SMTP_USER: optionalEnvString,
+  EMAIL_ADMIN: optionalEnvString,
+  EMAIL_SERVER_HOST: optionalEnvString,
+  EMAIL_SERVER_PASSWORD: optionalEnvString,
+  EMAIL_SERVER_PORT: z.coerce.number().int().positive().optional(),
+  EMAIL_SERVER_USER: optionalEnvString,
 });
 
 export async function sendLeadNotificationEmail(
@@ -51,9 +44,9 @@ export async function sendLeadNotificationEmail(
   try {
     const transporter = nodemailer.createTransport({
       auth:
-        config.data.user && config.data.pass
+        config.data.user && config.data.password
           ? {
-              pass: config.data.pass,
+              pass: config.data.password,
               user: config.data.user,
             }
           : undefined,
@@ -90,7 +83,7 @@ function getLeadNotificationConfig():
       data: {
         from: string;
         host: string;
-        pass?: string;
+        password?: string;
         port: number;
         secure: boolean;
         to: string;
@@ -99,15 +92,11 @@ function getLeadNotificationConfig():
     }
   | { success: false; reason: string } {
   const parsed = notificationEnvSchema.safeParse({
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-    LEAD_NOTIFICATION_EMAIL: process.env.LEAD_NOTIFICATION_EMAIL,
-    LEAD_NOTIFICATION_TO: process.env.LEAD_NOTIFICATION_TO,
-    SMTP_FROM: process.env.SMTP_FROM,
-    SMTP_HOST: process.env.SMTP_HOST,
-    SMTP_PASS: process.env.SMTP_PASS,
-    SMTP_PORT: process.env.SMTP_PORT,
-    SMTP_SECURE: process.env.SMTP_SECURE,
-    SMTP_USER: process.env.SMTP_USER,
+    EMAIL_ADMIN: process.env.EMAIL_ADMIN,
+    EMAIL_SERVER_HOST: process.env.EMAIL_SERVER_HOST,
+    EMAIL_SERVER_PASSWORD: process.env.EMAIL_SERVER_PASSWORD,
+    EMAIL_SERVER_PORT: process.env.EMAIL_SERVER_PORT,
+    EMAIL_SERVER_USER: process.env.EMAIL_SERVER_USER,
   });
 
   if (!parsed.success) {
@@ -118,45 +107,42 @@ function getLeadNotificationConfig():
   }
 
   const env = parsed.data;
-  const recipient =
-    env.LEAD_NOTIFICATION_EMAIL ?? env.LEAD_NOTIFICATION_TO ?? env.ADMIN_EMAIL;
 
-  if (!recipient) {
+  if (!env.EMAIL_ADMIN) {
     return {
       success: false,
-      reason:
-        "Set LEAD_NOTIFICATION_EMAIL to receive contact form notifications.",
+      reason: "Set EMAIL_ADMIN to receive contact form notifications.",
     };
   }
 
-  if (!env.SMTP_HOST) {
+  if (!env.EMAIL_SERVER_HOST || !env.EMAIL_SERVER_USER) {
     return {
       success: false,
       reason:
-        "Lead notification email is configured, but server-side mail delivery is not configured.",
+        "Lead notification email is configured, but EMAIL_SERVER_HOST or EMAIL_SERVER_USER is missing.",
     };
   }
 
-  const from = env.SMTP_FROM ?? env.SMTP_USER;
-
-  if (!from) {
+  if (!env.EMAIL_SERVER_PASSWORD) {
     return {
       success: false,
       reason:
-        "Lead notification email is configured, but the sender address is missing.",
+        "Lead notification email is configured, but EMAIL_SERVER_PASSWORD is missing.",
     };
   }
+
+  const port = env.EMAIL_SERVER_PORT ?? 465;
 
   return {
     success: true,
     data: {
-      from,
-      host: env.SMTP_HOST,
-      pass: env.SMTP_PASS,
-      port: env.SMTP_PORT ?? 587,
-      secure: env.SMTP_SECURE ?? false,
-      to: recipient,
-      user: env.SMTP_USER,
+      from: env.EMAIL_SERVER_USER,
+      host: env.EMAIL_SERVER_HOST,
+      password: env.EMAIL_SERVER_PASSWORD.replace(/\s+/g, ""),
+      port,
+      secure: port === 465,
+      to: env.EMAIL_ADMIN,
+      user: env.EMAIL_SERVER_USER,
     },
   };
 }
