@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "FlytBDR Copilot",
-  description: "Internal sales intelligence dashboard for inbound BDR workflows.",
+  description: "FlytBase inbound contact intake and admin sales intelligence cockpit.",
 };
 
 export default function RootLayout({

@@ -51,8 +51,8 @@ export function DashboardShell() {
               FlytBDR Copilot
             </h1>
             <p className="mt-1 max-w-2xl truncate text-xs text-muted-foreground">
-              Intake inbound requests, generate account research, qualify the lead,
-              match FlytBase proof, and hand the AE a clean action brief.
+              Review contact form submissions, qualification, account research,
+              FlytBase proof, GTM motion, outreach, and AE handoff.
             </p>
           </div>
           <div className="hidden flex-wrap items-center justify-end gap-2 md:flex">
