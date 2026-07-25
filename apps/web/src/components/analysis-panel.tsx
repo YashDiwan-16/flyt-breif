@@ -971,6 +971,10 @@ function formatLabel(value: string) {
     .join(" ");
 }
 
-function formatEmailStepType(value: EmailSequenceStep["type"]) {
+function formatEmailStepType(value?: EmailSequenceStep["type"]) {
+  if (!value) {
+    return "Email";
+  }
+
   return formatLabel(value.replace(/-/g, " "));
 }
