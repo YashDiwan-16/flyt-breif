@@ -56,10 +56,15 @@ Local admin login defaults to `admin@flytbase.com` / `flytbdr-admin`. Override `
 
 ## Lead Email Notifications
 
-New contact form submissions can send a server-side Nodemailer alert after the lead is analyzed and stored. Set these in `apps/web/.env.local`:
+New contact form submissions can send a server-side Nodemailer alert after the lead is analyzed and stored. For the recipient, set your inbox email:
 
 ```bash
-LEAD_NOTIFICATION_TO=you@example.com
+LEAD_NOTIFICATION_EMAIL=you@example.com
+```
+
+Actual delivery still needs a server-side sender transport. Keep that hidden in deployment secrets:
+
+```bash
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -68,7 +73,7 @@ SMTP_PASS=your-smtp-password
 SMTP_FROM="FlytBDR Copilot <no-reply@example.com>"
 ```
 
-If SMTP is not configured, submissions still work and the notification status is marked as skipped. If SMTP fails, the public user still sees the thank-you state and the admin queue still receives the lead.
+If delivery transport is not configured, submissions still work and the notification status is marked as skipped. If delivery fails, the public user still sees the thank-you state and the admin queue still receives the lead.
 
 ## Workflow Script
 

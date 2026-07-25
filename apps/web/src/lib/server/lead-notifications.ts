@@ -22,6 +22,8 @@ const optionalEnvString = z.preprocess(
 );
 
 const notificationEnvSchema = z.object({
+  ADMIN_EMAIL: optionalEnvString,
+  LEAD_NOTIFICATION_EMAIL: optionalEnvString,
   LEAD_NOTIFICATION_TO: optionalEnvString,
   SMTP_FROM: optionalEnvString,
   SMTP_HOST: optionalEnvString,
@@ -97,6 +99,8 @@ function getLeadNotificationConfig():
     }
   | { success: false; reason: string } {
   const parsed = notificationEnvSchema.safeParse({
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+    LEAD_NOTIFICATION_EMAIL: process.env.LEAD_NOTIFICATION_EMAIL,
     LEAD_NOTIFICATION_TO: process.env.LEAD_NOTIFICATION_TO,
     SMTP_FROM: process.env.SMTP_FROM,
     SMTP_HOST: process.env.SMTP_HOST,
@@ -114,18 +118,22 @@ function getLeadNotificationConfig():
   }
 
   const env = parsed.data;
+  const recipient =
+    env.LEAD_NOTIFICATION_EMAIL ?? env.LEAD_NOTIFICATION_TO ?? env.ADMIN_EMAIL;
 
-  if (!env.LEAD_NOTIFICATION_TO) {
+  if (!recipient) {
     return {
       success: false,
-      reason: "Set LEAD_NOTIFICATION_TO to receive contact form notifications.",
+      reason:
+        "Set LEAD_NOTIFICATION_EMAIL to receive contact form notifications.",
     };
   }
 
   if (!env.SMTP_HOST) {
     return {
       success: false,
-      reason: "Set SMTP_HOST to enable Nodemailer notifications.",
+      reason:
+        "Lead notification email is configured, but server-side mail delivery is not configured.",
     };
   }
 
@@ -134,7 +142,8 @@ function getLeadNotificationConfig():
   if (!from) {
     return {
       success: false,
-      reason: "Set SMTP_FROM or SMTP_USER for the notification sender.",
+      reason:
+        "Lead notification email is configured, but the sender address is missing.",
     };
   }
 
@@ -146,7 +155,7 @@ function getLeadNotificationConfig():
       pass: env.SMTP_PASS,
       port: env.SMTP_PORT ?? 587,
       secure: env.SMTP_SECURE ?? false,
-      to: env.LEAD_NOTIFICATION_TO,
+      to: recipient,
       user: env.SMTP_USER,
     },
   };
