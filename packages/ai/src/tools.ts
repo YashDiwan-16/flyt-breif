@@ -803,6 +803,10 @@ function titleCase(value: string): string {
   return value
     .split(/[\s.-]+/)
     .filter(Boolean)
-    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1).toLowerCase()}`)
+    .map((part) =>
+      /[a-z][A-Z]/.test(part)
+        ? part
+        : `${part[0]?.toUpperCase() ?? ""}${part.slice(1).toLowerCase()}`,
+    )
     .join(" ");
 }

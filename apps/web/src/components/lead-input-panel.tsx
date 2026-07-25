@@ -8,9 +8,11 @@ import { Textarea } from "@flyt-breif/ui/components/textarea";
 import {
   AlertCircle,
   ArrowRight,
+  BadgeCheck,
   FileText,
   LoaderCircle,
   RotateCcw,
+  SunMedium,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -219,11 +221,15 @@ export function LeadInputPanel({
   }
 
   return (
-    <section className="flex min-h-[640px] flex-col border-b bg-card lg:min-h-0 lg:border-b-0">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b px-5">
+    <section className="flex min-h-[640px] flex-col overflow-hidden border bg-card shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
+      <div className="flex min-h-16 shrink-0 items-center justify-between border-b bg-[#fbfdf9] px-5">
         <div>
-          <h2 className="text-sm font-semibold">Inbound Lead</h2>
-          <p className="text-xs text-muted-foreground">Paste the lead, then run analysis</p>
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+            <SunMedium className="size-3.5" />
+            Live lead intake
+          </div>
+          <h2 className="mt-1 text-sm font-semibold">Inbound Lead</h2>
+          <p className="text-xs text-muted-foreground">Raw signal in, AE-ready brief out</p>
         </div>
         <Button
           type="button"
@@ -239,6 +245,21 @@ export function LeadInputPanel({
 
       <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
         <div className="space-y-4 p-5 lg:min-h-0 lg:flex-1 lg:overflow-auto">
+          <div className="border border-emerald-600/20 bg-emerald-500/10 p-3">
+            <div className="flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center border border-emerald-700/20 bg-emerald-600 text-white">
+                <BadgeCheck className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold">Recommended hackathon run</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Solar operator lead with PV scale, budget, pilot timing, and drone dock
+                  signals for the EnBW proof path.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <Label>Samples</Label>
@@ -247,20 +268,34 @@ export function LeadInputPanel({
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {sampleLeads.map((sample) => (
-                <Button
-                  key={sample.label}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                  onClick={() => loadSample(sample.leadInput)}
-                  disabled={isSubmitting}
-                >
-                  <FileText />
-                  <span className="truncate">{sample.label}</span>
-                </Button>
-              ))}
+              {sampleLeads.map((sample, index) => {
+                const isPrimary = index === 0;
+
+                return (
+                  <Button
+                    key={sample.label}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={[
+                      "h-auto min-h-9 justify-start py-2",
+                      isPrimary
+                        ? "col-span-2 border-emerald-700/30 bg-emerald-500/10 text-emerald-950 hover:bg-emerald-500/15"
+                        : "",
+                    ].join(" ")}
+                    onClick={() => loadSample(sample.leadInput)}
+                    disabled={isSubmitting}
+                  >
+                    {isPrimary ? <SunMedium /> : <FileText />}
+                    <span className="min-w-0 flex-1 truncate text-left">{sample.label}</span>
+                    {isPrimary ? (
+                      <span className="border border-emerald-700/20 bg-white/70 px-1.5 py-0.5 text-[10px] uppercase tracking-normal text-emerald-800">
+                        Best demo
+                      </span>
+                    ) : null}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
@@ -354,8 +389,8 @@ export function LeadInputPanel({
           ) : null}
         </div>
 
-        <div className="shrink-0 border-t p-5">
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <div className="shrink-0 border-t bg-[#fbfdf9] p-5">
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <LoaderCircle className="animate-spin" />
@@ -369,7 +404,7 @@ export function LeadInputPanel({
             )}
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Calls the server route at /api/analyze-lead. Samples do not bypass analysis.
+            Server-side AI with deterministic fallback for stage-safe demos.
           </p>
         </div>
       </form>

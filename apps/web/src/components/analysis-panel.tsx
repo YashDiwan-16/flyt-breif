@@ -13,6 +13,7 @@ import { toast } from "@flyt-breif/ui/components/sonner";
 import {
   AlertCircle,
   ArrowUpRight,
+  Award,
   BarChart3,
   BriefcaseBusiness,
   CheckCircle2,
@@ -22,11 +23,11 @@ import {
   Download,
   ExternalLink,
   FileText,
-  Handshake,
   LoaderCircle,
   Mail,
   Radar,
   RefreshCcw,
+  Route,
   SearchCheck,
   Send,
   ShieldCheck,
@@ -69,10 +70,14 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
   const summaryCards = getSummaryCards(state);
 
   return (
-    <section className="flex min-h-[680px] flex-1 flex-col border-t bg-background lg:min-h-0 lg:border-l lg:border-t-0">
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-2">
+    <section className="flex min-h-[680px] flex-1 flex-col overflow-hidden border bg-background shadow-[0_16px_40px_rgba(12,35,29,0.08)] lg:min-h-0">
+      <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-[#fbfdf9] px-5 py-2">
         <div>
-          <h2 className="text-sm font-semibold">Analysis Results</h2>
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-700">
+            <Radar className="size-3.5" />
+            Sales intelligence cockpit
+          </div>
+          <h2 className="mt-1 text-sm font-semibold">Analysis Results</h2>
           <p className="text-xs text-muted-foreground">{getPanelSubtitle(state)}</p>
         </div>
         {state.status === "success" ? (
@@ -98,8 +103,12 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
 
       <div className="min-h-0 flex-1 overflow-auto p-5">
         <div className="grid gap-3 md:grid-cols-3">
-          {summaryCards.map((card) => (
-            <Card key={card.label} size="sm">
+          {summaryCards.map((card, index) => (
+            <Card
+              key={card.label}
+              size="sm"
+              className={summaryCardClassName(index, state.status)}
+            >
               <CardHeader>
                 <CardTitle>{card.label}</CardTitle>
               </CardHeader>
@@ -112,6 +121,13 @@ export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
             </Card>
           ))}
         </div>
+
+        {state.status === "success" ? (
+          <SuccessDemoRibbon
+            analysis={state.analysis}
+            analysisStatus={state.analysisStatus}
+          />
+        ) : null}
 
         <div className="mt-4">
           {state.status === "success"
@@ -187,6 +203,63 @@ function AnalysisWorkflowActions({ analysis }: { analysis: LeadAnalysis }) {
   );
 }
 
+function SuccessDemoRibbon({
+  analysis,
+  analysisStatus,
+}: {
+  analysis: LeadAnalysis;
+  analysisStatus: AnalysisGenerationStatus;
+}) {
+  const bantTotal = getBantTotal(analysis.qualification);
+  const handoffQuestions = analysis.aeHandoffSummary.topDiscoveryQuestions.length;
+
+  return (
+    <section className="mt-3 border bg-[#172b24] p-4 text-[#f4fbf4] shadow-[0_18px_45px_rgba(12,35,29,0.16)]">
+      <div className="grid gap-3 xl:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-emerald-200/80">
+            <Award className="size-3.5 text-emerald-300" />
+            Demo outcome
+          </div>
+          <p className="mt-2 text-lg font-semibold">
+            {analysis.leadSnapshot.companyName} is ready for sales action
+          </p>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-emerald-50/75">
+            {analysis.matchedCaseStudy.title} supports the recommended{" "}
+            {analysis.gtmRecommendation.recommendedMotion} motion.
+          </p>
+        </div>
+        <OutcomeStat label="Lead score" value={`${analysis.leadSnapshot.leadScore}/100`} />
+        <OutcomeStat label="BANT total" value={`${bantTotal}/20`} />
+        <OutcomeStat label="Case study" value={analysis.matchedCaseStudy.caseStudyId.includes("enbw") ? "EnBW" : analysis.matchedCaseStudy.title} />
+        <OutcomeStat
+          label={analysisStatus === "fallback" ? "Demo safety" : "Model"}
+          value={analysisStatus === "fallback" ? "Fallback" : "Gemini"}
+          detail={`${handoffQuestions} AE questions`}
+        />
+      </div>
+    </section>
+  );
+}
+
+function OutcomeStat({
+  detail,
+  label,
+  value,
+}: {
+  detail?: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 border border-white/15 bg-white/10 p-3">
+      <p className="text-[10px] uppercase tracking-normal text-emerald-100/70">{label}</p>
+      <p className="mt-1 truncate text-base font-semibold text-white">{value}</p>
+      {detail ? <p className="mt-1 truncate text-xs text-emerald-50/70">{detail}</p> : null}
+    </div>
+  );
+}
+
 function renderAnalysisCockpit(
   analysis: LeadAnalysis,
   modelId: string,
@@ -220,7 +293,7 @@ function LeadSnapshotSection({ analysis }: { analysis: LeadAnalysis }) {
   const { leadSnapshot } = analysis;
 
   return (
-    <section className="border bg-card">
+    <section className="border border-emerald-700/20 bg-card shadow-[0_12px_34px_rgba(12,35,29,0.08)]">
       <SectionHeader
         eyebrow="Lead Snapshot"
         icon={<Target />}
@@ -288,7 +361,18 @@ function BantQualificationSection({
       <SectionLabel icon={<ShieldCheck />} title="BANT Qualification Cards" />
       <div className="grid gap-3 xl:grid-cols-4">
         {getBantRows(qualification).map((row) => (
-          <Card key={row.label} size="sm" className="min-h-52">
+          <Card
+            key={row.label}
+            size="sm"
+            className={[
+              "min-h-52 border bg-card shadow-[0_10px_28px_rgba(12,35,29,0.06)]",
+              row.item.score >= 4
+                ? "border-emerald-600/25"
+                : row.item.score >= 2
+                  ? "border-amber-600/25"
+                  : "border-destructive/25",
+            ].join(" ")}
+          >
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <CardTitle>{row.label}</CardTitle>
@@ -324,7 +408,7 @@ function AccountResearchSection({ analysis }: { analysis: LeadAnalysis }) {
   const { accountResearch } = analysis;
 
   return (
-    <section className="border bg-card">
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
         eyebrow="Account Research"
         icon={<BriefcaseBusiness />}
@@ -369,7 +453,7 @@ function CaseStudyMatchSection({ analysis }: { analysis: LeadAnalysis }) {
   const { matchedCaseStudy } = analysis;
 
   return (
-    <section className="border bg-card">
+    <section className="border border-emerald-700/25 bg-card shadow-[0_12px_34px_rgba(12,35,29,0.08)]">
       <SectionHeader
         eyebrow="Case Study Match"
         icon={<SearchCheck />}
@@ -419,10 +503,10 @@ function GtmMotionSection({ analysis }: { analysis: LeadAnalysis }) {
   const { gtmRecommendation } = analysis;
 
   return (
-    <section className="border bg-card">
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
         eyebrow="GTM Motion Recommendation"
-        icon={<Handshake />}
+        icon={<Route />}
         title={gtmRecommendation.recommendedMotion}
         action={<Badge tone={priorityTone(gtmRecommendation.priority)}>{formatLabel(gtmRecommendation.priority)} priority</Badge>}
       />
@@ -461,7 +545,7 @@ function EmailSequenceSection({
   strategy: string;
 }) {
   return (
-    <section className="border bg-card">
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
         eyebrow="Adaptive Email Sequence"
         icon={<Mail />}
@@ -504,7 +588,7 @@ function AeHandoffSection({ analysis }: { analysis: LeadAnalysis }) {
   const { aeHandoffSummary } = analysis;
 
   return (
-    <section className="border bg-card">
+    <section className="border border-emerald-700/25 bg-card shadow-[0_14px_38px_rgba(12,35,29,0.09)]">
       <SectionHeader
         eyebrow="AE Handoff Summary"
         icon={<ClipboardList />}
@@ -574,7 +658,7 @@ function AnalysisSignalsSection({
   const isFallback = analysisStatus === "fallback";
 
   return (
-    <section className="border bg-card">
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
         eyebrow="Analysis Signals Debug Panel"
         icon={<BarChart3 />}
@@ -656,7 +740,7 @@ function AnalysisSignalsSection({
 function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) {
   if (state.status === "loading") {
     return (
-      <section className="border bg-card">
+      <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
         <SectionHeader
           eyebrow="Loading Pipeline"
           icon={<LoaderCircle className="animate-spin" />}
@@ -698,7 +782,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
 
   if (state.status === "error") {
     return (
-      <section className="border bg-card">
+      <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
         <SectionHeader
           eyebrow="Analysis Error"
           icon={<AlertCircle />}
@@ -730,7 +814,7 @@ function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) 
   }
 
   return (
-    <section className="border bg-card">
+    <section className="border bg-card shadow-[0_12px_34px_rgba(12,35,29,0.06)]">
       <SectionHeader
         eyebrow="Sales Cockpit"
         icon={<Sparkles />}
@@ -777,7 +861,7 @@ function SectionHeader({
   title: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b px-4 py-3">
+    <div className="flex items-start justify-between gap-4 border-b bg-[#fbfdf9] px-4 py-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
           <span className="[&_svg]:size-3.5">{icon}</span>
@@ -801,7 +885,7 @@ function SectionLabel({ icon, title }: { icon: React.ReactNode; title: string })
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 border bg-background p-3">
+    <div className="min-w-0 border bg-background p-3 shadow-[0_6px_18px_rgba(12,35,29,0.035)]">
       <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
       <p className="mt-1 break-words text-sm font-semibold">{value}</p>
     </div>
@@ -926,8 +1010,8 @@ function ScoreBar({ max, value }: { max: number; value: number }) {
   const width = `${Math.max(0, Math.min(100, (value / max) * 100))}%`;
 
   return (
-    <div className="h-2 border bg-muted">
-      <div className="h-full bg-foreground" style={{ width }} />
+    <div className="h-2.5 border bg-muted">
+      <div className={["h-full", scoreBarClassName(value)].join(" ")} style={{ width }} />
     </div>
   );
 }
@@ -942,6 +1026,41 @@ function getBantRows(qualification: BANTQualification): readonly {
     { label: "Need", item: qualification.need },
     { label: "Timeline", item: qualification.timeline },
   ];
+}
+
+function getBantTotal(qualification: BANTQualification) {
+  return getBantRows(qualification).reduce(
+    (total, row) => total + row.item.score,
+    0,
+  );
+}
+
+function summaryCardClassName(index: number, status: AnalysisPanelState["status"]) {
+  if (status === "success") {
+    if (index === 0) {
+      return "border-emerald-700/25 bg-emerald-500/10 shadow-[0_10px_28px_rgba(12,35,29,0.06)]";
+    }
+
+    if (index === 1) {
+      return "border-amber-700/25 bg-amber-500/10 shadow-[0_10px_28px_rgba(83,58,14,0.05)]";
+    }
+
+    return "border-sky-700/20 bg-sky-500/10 shadow-[0_10px_28px_rgba(14,57,83,0.05)]";
+  }
+
+  return "border-border bg-card shadow-[0_8px_24px_rgba(12,35,29,0.04)]";
+}
+
+function scoreBarClassName(score: number) {
+  if (score >= 4) {
+    return "bg-emerald-600";
+  }
+
+  if (score >= 2) {
+    return "bg-amber-500";
+  }
+
+  return "bg-destructive";
 }
 
 async function copyWorkflowText(label: string, text: string) {

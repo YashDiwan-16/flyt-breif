@@ -12,7 +12,7 @@ export function DashboardWorkspace() {
   const [retryRequestId, setRetryRequestId] = useState(0);
 
   return (
-    <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(360px,390px)_minmax(0,1fr)]">
+    <div className="grid flex-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[minmax(360px,410px)_minmax(0,1fr)]">
       <LeadInputPanel
         isAnalyzing={analysisState.status === "loading"}
         onAnalyzeError={(error, details) =>
