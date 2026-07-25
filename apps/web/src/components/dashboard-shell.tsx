@@ -1,12 +1,11 @@
-import { AnalysisPanel } from "@/components/analysis-panel";
-import { LeadInputPanel } from "@/components/lead-input-panel";
+import { DashboardWorkspace } from "@/components/dashboard-workspace";
 import { dashboardStats } from "@flyt-breif/core";
 import { Button } from "@flyt-breif/ui/components/button";
 import { Bell, Gauge, Search, Settings } from "lucide-react";
 
 export function DashboardShell() {
   return (
-    <main className="flex h-svh min-h-[720px] bg-muted/30 text-foreground">
+    <main className="flex min-h-svh bg-muted/30 text-foreground lg:h-svh lg:min-h-[720px]">
       <nav className="hidden w-16 shrink-0 flex-col items-center border-r bg-card py-3 lg:flex">
         <div className="mb-6 flex size-9 items-center justify-center border bg-primary text-xs font-bold text-primary-foreground">
           FB
@@ -50,10 +49,7 @@ export function DashboardShell() {
           </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[390px_1fr]">
-          <LeadInputPanel />
-          <AnalysisPanel />
-        </div>
+        <DashboardWorkspace />
       </div>
     </main>
   );

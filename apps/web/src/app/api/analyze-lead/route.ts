@@ -28,9 +28,11 @@ Rules:
 - Do not invent public facts.
 - If real company research is unavailable, label the field as inferred or unknown.
 - Use evidence from the inbound email as the primary source.
-- Show missing information clearly in qualification, accountResearch.researchGaps, aeHandoffSummary.openQuestions, and warnings.
+- Show missing information clearly in qualification, accountResearch.researchGaps, aeHandoffSummary.missingInfo, and warnings.
 - Match case studies using the provided FlytBase knowledge base only.
-- Prefer concrete operational insight over generic sales language.
+- Prefer concrete drone-automation operational insight over generic sales language.
+- Keep every recommendation specific to FlytBase autonomous drone operations, drone docks, inspections, monitoring, security, response workflows, and operational integrations where relevant.
+- Avoid generic SaaS phrasing such as "streamline workflows", "unlock value", "drive efficiency", or "digital transformation" unless it is tied to a specific drone operation or FlytBase use case.
 - Keep every array populated with useful, concise items.
 - Use lowercase BANT keys in the final qualification object: budget, authority, need, timeline.
 - For each BANT item, include score, evidence, missingInfo, and one discoveryQuestion.
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
     });
     const { model, modelId } = getGoogleLanguageModel();
     const result = await generateText({
-      maxOutputTokens: 6000,
+      maxOutputTokens: 8000,
       model,
       output: Output.object({
         schema: leadAnalysisSchema,
@@ -152,9 +154,17 @@ Final response requirements:
 - accountResearch should not use external facts unless supplied by the email or adapter context. Use inferred or unknown labels where appropriate.
 - Convert adapter sources into LeadAnalysis sources using allowed sourceType values: lead-email, company-website, account-research, manual-note, or case-study.
 - matchedCaseStudy must come from the FlytBase case-study knowledge base returned by tools.
-- gtmRecommendation should be actionable for a BDR or AE.
-- emailSequence should include practical outbound copy grounded in the inbound email and matched case study.
-- aeHandoffSummary should be useful for an AE preparing for discovery.
+- gtmRecommendation should be actionable for a BDR or AE and name the FlytBase drone-automation motion: Direct AE, Partner-led, or Hybrid.
+- emailSequence must have exactly 3 steps:
+  1. step=1, type="first-reply", delayDays=0. Purpose: respond to the inbound lead, acknowledge their drone-automation problem, and ask for a focused discovery call.
+  2. step=2, type="case-study-follow-up". Purpose: follow up with the matched FlytBase case-study proof point and connect it to the lead's industry, use case, and pain.
+  3. step=3, type="technical-discovery-follow-up". Purpose: ask technical discovery questions about drone docks, inspection/monitoring cadence, airspace/site constraints, integrations, alerts, reporting, and deployment scope.
+- Every email step must include a specific subject, purpose, body, callToAction, and personalizationNotes. Keep bodies concise, usable by a BDR, and grounded in the inbound email plus matched case study.
+- Email copy must sound like FlytBase selling autonomous drone operations, not generic SaaS. Mention the relevant drone operation directly: inspections, monitoring, security patrols, hazardous detection, wildfire detection, rail/oil/gas infrastructure monitoring, or plantation/site surveillance.
+- aeHandoffSummary must include: whyThisLeadMatters, painHypothesis, evidence, missingInfo, topDiscoveryQuestions, suggestedCallAgenda, gtmOwner, riskNotes, summary, and recommendedNextSteps.
+- aeHandoffSummary.evidence must quote or paraphrase concrete inbound-email signals and matched case-study proof. Do not use vague claims.
+- aeHandoffSummary.topDiscoveryQuestions should prioritize drone deployment and buying-process questions: site scale, dock placement, inspection cadence, sensor needs, alert workflow, integrations, regulatory/airspace constraints, budget, authority, and timeline.
+- aeHandoffSummary.gtmOwner should be one of: "BDR", "AE", "Partner", or "AE + Partner", with a short reason if needed.
 `;
 }
 

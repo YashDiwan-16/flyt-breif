@@ -164,8 +164,14 @@ export type GTMMotion = z.infer<typeof gtmMotionSchema>;
 
 export const emailSequenceStepSchema = z.strictObject({
   step: z.number().int().min(1),
+  type: z.enum([
+    "first-reply",
+    "case-study-follow-up",
+    "technical-discovery-follow-up",
+  ]),
   delayDays: z.number().int().min(0),
   subject: nonEmptyStringSchema,
+  purpose: nonEmptyStringSchema,
   body: nonEmptyStringSchema,
   callToAction: nonEmptyStringSchema,
   personalizationNotes: stringListSchema,
@@ -174,18 +180,35 @@ export type EmailSequenceStep = z.infer<typeof emailSequenceStepSchema>;
 
 export const emailSequenceSchema = z.strictObject({
   strategy: nonEmptyStringSchema,
-  steps: z.array(emailSequenceStepSchema).min(1),
+  steps: z.tuple([
+    emailSequenceStepSchema.extend({
+      step: z.literal(1),
+      type: z.literal("first-reply"),
+      delayDays: z.literal(0),
+    }),
+    emailSequenceStepSchema.extend({
+      step: z.literal(2),
+      type: z.literal("case-study-follow-up"),
+    }),
+    emailSequenceStepSchema.extend({
+      step: z.literal(3),
+      type: z.literal("technical-discovery-follow-up"),
+    }),
+  ]),
 });
 export type EmailSequence = z.infer<typeof emailSequenceSchema>;
 
 export const aeHandoffSummarySchema = z.strictObject({
   summary: nonEmptyStringSchema,
-  whyNow: nonEmptyStringSchema,
-  talkingPoints: stringListSchema,
-  openQuestions: stringListSchema,
+  whyThisLeadMatters: nonEmptyStringSchema,
+  painHypothesis: nonEmptyStringSchema,
+  evidence: stringListSchema,
+  missingInfo: stringListSchema,
+  topDiscoveryQuestions: stringListSchema,
   recommendedNextSteps: stringListSchema,
-  risks: stringListSchema,
-  suggestedMeetingAgenda: stringListSchema,
+  suggestedCallAgenda: stringListSchema,
+  gtmOwner: nonEmptyStringSchema,
+  riskNotes: stringListSchema,
 });
 export type AEHandoffSummary = z.infer<typeof aeHandoffSummarySchema>;
 

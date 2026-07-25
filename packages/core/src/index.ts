@@ -2,10 +2,12 @@ export * from "./case-studies";
 export * from "./database";
 export * from "./models";
 
+import type { LeadInput } from "./models";
+
 export type LeadFieldKind = "text" | "email" | "url" | "textarea" | "select";
 
 export type LeadInputField = {
-  id: string;
+  id: keyof LeadInput;
   label: string;
   kind: LeadFieldKind;
   placeholder: string;
@@ -26,49 +28,45 @@ export type DashboardStat = {
 
 export const leadInputFields = [
   {
-    id: "leadSource",
-    label: "Lead source",
-    kind: "select",
-    placeholder: "Select inbound source",
-    options: ["Website form", "Demo request", "Partner referral", "Event scan", "Manual import"],
+    id: "rawEmail",
+    label: "Raw inbound email",
+    kind: "textarea",
+    placeholder:
+      "Paste the inbound email or web-form note, including the problem, context, and any timeline or scale hints.",
+    helper: "Required. Samples only fill this form and never determine the analysis output directly.",
   },
   {
-    id: "companyName",
-    label: "Company",
-    kind: "text",
-    placeholder: "e.g. Apex Facilities Group",
-  },
-  {
-    id: "contactName",
-    label: "Contact",
+    id: "senderName",
+    label: "Sender name",
     kind: "text",
     placeholder: "e.g. Priya Shah",
   },
   {
-    id: "contactEmail",
-    label: "Email",
+    id: "senderEmail",
+    label: "Sender email",
     kind: "email",
     placeholder: "priya@example.com",
   },
   {
-    id: "role",
-    label: "Role / title",
-    kind: "text",
-    placeholder: "e.g. Head of Security Operations",
-    helper: "Used later to infer persona fit and buying committee influence.",
-  },
-  {
-    id: "website",
-    label: "Website",
+    id: "companyWebsite",
+    label: "Company website",
     kind: "url",
     placeholder: "https://company.com",
   },
   {
-    id: "notes",
-    label: "Inbound notes",
-    kind: "textarea",
-    placeholder:
-      "Paste the form submission, routing notes, company context, or BDR research snippets.",
+    id: "region",
+    label: "Region",
+    kind: "select",
+    placeholder: "Select region",
+    options: [
+      "North America",
+      "Europe",
+      "Middle East",
+      "Latin America",
+      "Asia Pacific",
+      "Africa",
+      "Global",
+    ],
   },
 ] as const satisfies readonly LeadInputField[];
 

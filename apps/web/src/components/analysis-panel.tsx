@@ -1,75 +1,976 @@
-import { qualificationSignals } from "@flyt-breif/core";
+import {
+  type BANTQualification,
+  type BantItem,
+  type EmailSequenceStep,
+  type LeadAnalysis,
+  qualificationSignals,
+} from "@flyt-breif/core";
 import { Button } from "@flyt-breif/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@flyt-breif/ui/components/card";
-import { BarChart3, ClipboardList, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  BarChart3,
+  BriefcaseBusiness,
+  CheckCircle2,
+  CircleDashed,
+  ClipboardList,
+  ExternalLink,
+  FileText,
+  Handshake,
+  LoaderCircle,
+  Mail,
+  Radar,
+  SearchCheck,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  UserRoundCheck,
+} from "lucide-react";
 
-export function AnalysisPanel() {
+export type AnalysisPanelState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; error: string; details?: readonly string[] }
+  | { status: "success"; analysis: LeadAnalysis; modelId: string };
+
+type AnalysisPanelProps = {
+  state: AnalysisPanelState;
+};
+
+type BadgeTone = "default" | "strong" | "success" | "warning" | "muted" | "danger";
+
+const loadingPipeline = [
+  "Parsing lead",
+  "Researching account",
+  "Scoring qualification",
+  "Matching case study",
+  "Drafting outreach",
+  "Preparing AE handoff",
+] as const;
+
+export function AnalysisPanel({ state }: AnalysisPanelProps) {
+  const summaryCards = getSummaryCards(state);
+
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-l bg-background">
+    <section className="flex min-h-0 flex-1 flex-col border-t bg-background lg:border-l lg:border-t-0">
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-5">
         <div>
           <h2 className="text-sm font-semibold">Analysis Results</h2>
-          <p className="text-xs text-muted-foreground">Awaiting lead intake</p>
+          <p className="text-xs text-muted-foreground">{getPanelSubtitle(state)}</p>
         </div>
         <Button variant="outline" size="sm" disabled>
-          <Sparkles />
-          Generate
+          {state.status === "loading" ? (
+            <LoaderCircle className="animate-spin" />
+          ) : (
+            <Sparkles />
+          )}
+          {state.status === "loading" ? "Running" : "Server AI"}
         </Button>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-4 overflow-auto p-5">
+      <div className="min-h-0 flex-1 overflow-auto p-5">
         <div className="grid gap-3 md:grid-cols-3">
-          {qualificationSignals.map((signal) => (
-            <Card key={signal.id} size="sm">
+          {summaryCards.map((card) => (
+            <Card key={card.label} size="sm">
               <CardHeader>
-                <CardTitle>{signal.label}</CardTitle>
+                <CardTitle>{card.label}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-muted-foreground">{signal.placeholder}</p>
+                <p className="break-words text-sm font-semibold">{card.value}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                  {card.detail}
+                </p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid min-h-[420px] gap-4 xl:grid-cols-[1fr_320px]">
-          <div className="flex min-h-0 flex-col border bg-card">
-            <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <ClipboardList className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">Copilot Brief</h3>
-            </div>
-            <div className="flex flex-1 items-center justify-center p-8 text-center">
-              <div className="max-w-sm">
-                <div className="mx-auto mb-4 flex size-10 items-center justify-center border bg-muted">
-                  <Sparkles className="size-5 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-medium">Analysis will appear here</p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Future versions will summarize fit, urgency, buying signals, pain points, and a
-                  recommended first-touch angle for the inbound BDR.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <aside className="flex min-h-0 flex-col border bg-card">
-            <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <BarChart3 className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">Signal Timeline</h3>
-            </div>
-            <div className="space-y-3 p-4">
-              {["Company context", "Persona fit", "Trigger event", "Outreach angle"].map(
-                (item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <div className="size-2 shrink-0 border bg-muted" />
-                    <div className="h-7 flex-1 border bg-muted/40" />
-                    <span className="w-28 text-xs text-muted-foreground">{item}</span>
-                  </div>
-                ),
-              )}
-            </div>
-          </aside>
+        <div className="mt-4">
+          {state.status === "success"
+            ? renderAnalysisCockpit(state.analysis, state.modelId)
+            : renderNonSuccessState(state)}
         </div>
       </div>
     </section>
   );
+}
+
+function renderAnalysisCockpit(analysis: LeadAnalysis, modelId: string) {
+  return (
+    <div className="space-y-4">
+      <LeadSnapshotSection analysis={analysis} />
+      <BantQualificationSection qualification={analysis.qualification} />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <AccountResearchSection analysis={analysis} />
+        <CaseStudyMatchSection analysis={analysis} />
+      </div>
+
+      <GtmMotionSection analysis={analysis} />
+      <EmailSequenceSection steps={analysis.emailSequence.steps} strategy={analysis.emailSequence.strategy} />
+      <AeHandoffSection analysis={analysis} />
+      <AnalysisSignalsSection analysis={analysis} modelId={modelId} />
+    </div>
+  );
+}
+
+function LeadSnapshotSection({ analysis }: { analysis: LeadAnalysis }) {
+  const { leadSnapshot } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Lead Snapshot"
+        icon={<Target />}
+        title={leadSnapshot.companyName}
+        action={<ConfidenceBadge value={analysis.confidence} />}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-[1fr_280px]">
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Metric label="Lead score" value={`${leadSnapshot.leadScore}/100`} />
+            <Metric label="Qualification" value={formatLabel(leadSnapshot.qualificationLabel)} />
+            <Metric label="Urgency" value={formatLabel(leadSnapshot.urgency)} />
+            <Metric label="Region" value={leadSnapshot.region} />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="border bg-background p-3">
+              <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                Contact
+              </p>
+              <p className="mt-1 text-sm font-semibold">{leadSnapshot.contactName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{leadSnapshot.contactRole}</p>
+            </div>
+            <div className="border bg-background p-3">
+              <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                Use Case
+              </p>
+              <p className="mt-1 text-sm font-semibold">{leadSnapshot.useCase}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{leadSnapshot.industry}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border bg-background p-3">
+          <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+            Sales posture
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Badge tone={scoreTone(leadSnapshot.leadScore)}>
+              {formatLabel(leadSnapshot.qualificationLabel)}
+            </Badge>
+            <Badge tone={urgencyTone(leadSnapshot.urgency)}>
+              {formatLabel(leadSnapshot.urgency)} urgency
+            </Badge>
+            <Badge tone={priorityTone(analysis.gtmRecommendation.priority)}>
+              {formatLabel(analysis.gtmRecommendation.priority)} priority
+            </Badge>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-muted-foreground">
+            {analysis.gtmRecommendation.nextBestAction}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BantQualificationSection({
+  qualification,
+}: {
+  qualification: BANTQualification;
+}) {
+  return (
+    <section className="space-y-3">
+      <SectionLabel icon={<ShieldCheck />} title="BANT Qualification Cards" />
+      <div className="grid gap-3 xl:grid-cols-4">
+        {getBantRows(qualification).map((row) => (
+          <Card key={row.label} size="sm" className="min-h-52">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle>{row.label}</CardTitle>
+                <ScoreBadge score={row.item.score} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScoreBar value={row.item.score} max={5} />
+              <div className="mt-3">
+                <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                  Evidence
+                </p>
+                <ChipList items={row.item.evidence} limit={3} />
+              </div>
+              <div className="mt-3">
+                <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                  Missing
+                </p>
+                <ChipList items={row.item.missingInfo} limit={2} tone="warning" />
+              </div>
+              <p className="mt-3 border-t pt-3 text-xs leading-5 text-muted-foreground">
+                {row.item.discoveryQuestion}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AccountResearchSection({ analysis }: { analysis: LeadAnalysis }) {
+  const { accountResearch } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Account Research"
+        icon={<BriefcaseBusiness />}
+        title={accountResearch.companyOverview}
+        action={<Badge tone="muted">{accountResearch.sources.length} sources</Badge>}
+      />
+      <div className="space-y-4 p-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Metric label="Industry" value={accountResearch.industry} />
+          <Metric label="Region" value={accountResearch.region} />
+          <Metric label="Company size" value={accountResearch.companySize} />
+          <Metric label="Headquarters" value={accountResearch.headquarters} />
+        </div>
+
+        <TextBlock label="Operating context" value={accountResearch.operatingContext} />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <ListBlock
+            label="Key account signals"
+            items={accountResearch.keySignals}
+            icon={<Radar />}
+          />
+          <ListBlock
+            label="Likely buying committee"
+            items={accountResearch.likelyBuyingCommittee}
+            icon={<UserRoundCheck />}
+          />
+        </div>
+
+        <ListBlock
+          label="Research gaps"
+          items={accountResearch.researchGaps}
+          icon={<CircleDashed />}
+          tone="warning"
+        />
+      </div>
+    </section>
+  );
+}
+
+function CaseStudyMatchSection({ analysis }: { analysis: LeadAnalysis }) {
+  const { matchedCaseStudy } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Case Study Match"
+        icon={<SearchCheck />}
+        title={matchedCaseStudy.title}
+        action={<ConfidenceBadge value={matchedCaseStudy.confidence} />}
+      />
+      <div className="space-y-4 p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Metric label="Industry" value={matchedCaseStudy.industry} />
+          <Metric label="Region" value={matchedCaseStudy.region} />
+        </div>
+        <TextBlock label="Relevance rationale" value={matchedCaseStudy.relevanceRationale} />
+        <TextBlock label="Recommended email line" value={matchedCaseStudy.recommendedEmailLine} />
+
+        <div>
+          <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+            Matched use cases
+          </p>
+          <ChipList items={matchedCaseStudy.matchedUseCases} />
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+            Matched pain points
+          </p>
+          <ChipList items={matchedCaseStudy.matchedPainPoints} tone="warning" />
+        </div>
+        <ListBlock
+          label="Proof points"
+          items={matchedCaseStudy.proofPoints}
+          icon={<CheckCircle2 />}
+        />
+        <a
+          href={matchedCaseStudy.url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 border px-2 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          Open case study
+          <ExternalLink className="size-3" />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function GtmMotionSection({ analysis }: { analysis: LeadAnalysis }) {
+  const { gtmRecommendation } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="GTM Motion Recommendation"
+        icon={<Handshake />}
+        title={gtmRecommendation.recommendedMotion}
+        action={<Badge tone={priorityTone(gtmRecommendation.priority)}>{formatLabel(gtmRecommendation.priority)} priority</Badge>}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Metric label="Primary persona" value={gtmRecommendation.primaryPersona} />
+            <Metric label="Recommended offer" value={gtmRecommendation.recommendedOffer} />
+          </div>
+          <TextBlock label="Positioning" value={gtmRecommendation.positioning} />
+          <TextBlock label="Next best action" value={gtmRecommendation.nextBestAction} />
+        </div>
+        <div className="space-y-4">
+          <ListBlock
+            label="Discovery focus"
+            items={gtmRecommendation.discoveryFocus}
+            icon={<Target />}
+          />
+          <ListBlock
+            label="Risk notes"
+            items={gtmRecommendation.riskNotes}
+            icon={<AlertCircle />}
+            tone="warning"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EmailSequenceSection({
+  steps,
+  strategy,
+}: {
+  steps: readonly EmailSequenceStep[];
+  strategy: string;
+}) {
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Adaptive Email Sequence"
+        icon={<Mail />}
+        title={strategy}
+        action={<Badge tone="muted">{steps.length} steps</Badge>}
+      />
+      <div className="grid gap-3 p-4 xl:grid-cols-3">
+        {steps.map((step) => (
+          <div key={`${step.step}-${step.subject}`} className="border bg-background p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+                  Step {step.step} - {formatEmailStepType(step.type)}
+                </p>
+                <p className="mt-1 text-sm font-semibold">{step.subject}</p>
+              </div>
+              <Badge tone="muted">
+                {step.delayDays === 0 ? "Same day" : `Day +${step.delayDays}`}
+              </Badge>
+            </div>
+            <TextBlock label="Purpose" value={step.purpose} />
+            <p className="mt-3 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
+              {step.body}
+            </p>
+            <div className="mt-3 border-t pt-3">
+              <p className="flex items-center gap-1 text-xs font-medium">
+                <Send className="size-3.5" />
+                {step.callToAction}
+              </p>
+              <ChipList items={step.personalizationNotes} limit={3} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AeHandoffSection({ analysis }: { analysis: LeadAnalysis }) {
+  const { aeHandoffSummary } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="AE Handoff Summary"
+        icon={<ClipboardList />}
+        title={aeHandoffSummary.summary}
+        action={<Badge tone="strong">AE ready</Badge>}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <TextBlock
+            label="Why this lead matters"
+            value={aeHandoffSummary.whyThisLeadMatters}
+          />
+          <TextBlock label="Pain hypothesis" value={aeHandoffSummary.painHypothesis} />
+          <ListBlock
+            label="Evidence"
+            items={aeHandoffSummary.evidence}
+            icon={<CheckCircle2 />}
+          />
+          <ListBlock
+            label="Recommended next steps"
+            items={aeHandoffSummary.recommendedNextSteps}
+            icon={<ArrowUpRight />}
+          />
+        </div>
+        <div className="space-y-4">
+          <ListBlock
+            label="Missing info"
+            items={aeHandoffSummary.missingInfo}
+            icon={<CircleDashed />}
+            tone="warning"
+          />
+          <ListBlock
+            label="Top discovery questions"
+            items={aeHandoffSummary.topDiscoveryQuestions}
+            icon={<Target />}
+          />
+          <ListBlock
+            label="Risk notes"
+            items={aeHandoffSummary.riskNotes}
+            icon={<AlertCircle />}
+            tone="danger"
+          />
+          <ListBlock
+            label="Suggested call agenda"
+            items={aeHandoffSummary.suggestedCallAgenda}
+            icon={<FileText />}
+          />
+          <Metric label="GTM owner" value={aeHandoffSummary.gtmOwner} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AnalysisSignalsSection({
+  analysis,
+  modelId,
+}: {
+  analysis: LeadAnalysis;
+  modelId: string;
+}) {
+  const { parsedSignals } = analysis;
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Analysis Signals Debug Panel"
+        icon={<BarChart3 />}
+        title="Validated structured output and source trace"
+        action={<Badge tone="muted">{modelId}</Badge>}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-3">
+        <div className="space-y-4">
+          <Metric label="Contact email" value={parsedSignals.contactEmail} />
+          <Metric label="Company website" value={parsedSignals.companyWebsite} />
+          <ListBlock label="Pain points" items={parsedSignals.painPoints} icon={<AlertCircle />} />
+          <ListBlock
+            label="Business triggers"
+            items={parsedSignals.businessTriggers}
+            icon={<Radar />}
+          />
+        </div>
+        <div className="space-y-4">
+          <SignalChipGroup label="Budget signals" items={parsedSignals.budgetSignals} />
+          <SignalChipGroup label="Authority signals" items={parsedSignals.authoritySignals} />
+          <SignalChipGroup label="Need signals" items={parsedSignals.needSignals} />
+          <SignalChipGroup label="Timeline signals" items={parsedSignals.timelineSignals} />
+          <SignalChipGroup label="Missing info" items={parsedSignals.missingInfo} tone="warning" />
+        </div>
+        <div className="space-y-4">
+          <ListBlock
+            label="Warnings"
+            items={analysis.warnings}
+            icon={<AlertCircle />}
+            tone="warning"
+          />
+          <div>
+            <p className="text-[10px] uppercase tracking-normal text-muted-foreground">
+              Sources
+            </p>
+            <div className="mt-2 space-y-2">
+              {analysis.sources.map((source) => (
+                <div key={`${source.title}-${source.sourceType}`} className="border bg-background p-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-medium">{source.title}</p>
+                    <Badge tone="muted">{source.sourceType}</Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used for: {source.usedFor.join(", ")}
+                  </p>
+                  {source.url ? (
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                    >
+                      Open source
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function renderNonSuccessState(state: AnalysisPanelState) {
+  if (state.status === "loading") {
+    return (
+      <section className="border bg-card">
+        <SectionHeader
+          eyebrow="Loading Pipeline"
+          icon={<LoaderCircle className="animate-spin" />}
+          title="Building sales cockpit"
+          action={<Badge tone="strong">In progress</Badge>}
+        />
+        <div className="grid gap-4 p-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {loadingPipeline.map((step, index) => (
+              <div key={step} className="border bg-background p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium">{step}</p>
+                  {index === 0 ? (
+                    <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <CircleDashed className="size-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="mt-3 h-1.5 border bg-muted">
+                  <div
+                    className="h-full bg-foreground transition-all"
+                    style={{ width: index === 0 ? "72%" : "18%" }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border bg-background p-4">
+            <p className="text-sm font-semibold">Pipeline running</p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              FlytBDR is validating the lead, preparing account context, scoring BANT,
+              matching FlytBase proof, and assembling outreach plus AE handoff content.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <section className="border bg-card">
+        <SectionHeader
+          eyebrow="Analysis Error"
+          icon={<AlertCircle />}
+          title="Analysis did not complete"
+          action={<Badge tone="danger">Needs attention</Badge>}
+        />
+        <div className="p-4">
+          <div className="border border-destructive/30 bg-destructive/5 p-4">
+            <p className="text-sm font-semibold">{state.error}</p>
+            {state.details && state.details.length > 0 ? (
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                {state.details.slice(0, 8).map((detail) => (
+                  <p key={detail}>{detail}</p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border bg-card">
+      <SectionHeader
+        eyebrow="Sales Cockpit"
+        icon={<Sparkles />}
+        title="Analysis will appear here"
+        action={<Badge tone="muted">Idle</Badge>}
+      />
+      <div className="grid gap-4 p-4 xl:grid-cols-[1fr_320px]">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {loadingPipeline.map((step) => (
+            <div key={step} className="border bg-background p-3">
+              <div className="flex items-center gap-2">
+                <CircleDashed className="size-4 text-muted-foreground" />
+                <p className="text-xs font-medium">{step}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="border bg-background p-4 text-xs leading-5 text-muted-foreground">
+          Paste an inbound email or load a sample, then run analysis to populate lead
+          snapshot, BANT, account research, proof match, GTM motion, outreach, AE handoff,
+          and debug signals.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function SectionHeader({
+  action,
+  eyebrow,
+  icon,
+  title,
+}: {
+  action?: React.ReactNode;
+  eyebrow: string;
+  icon: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b px-4 py-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
+          <span className="[&_svg]:size-3.5">{icon}</span>
+          <span>{eyebrow}</span>
+        </div>
+        <h3 className="mt-1 break-words text-sm font-semibold">{title}</h3>
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+function SectionLabel({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-semibold">
+      <span className="text-muted-foreground [&_svg]:size-4">{icon}</span>
+      <h3>{title}</h3>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 border bg-background p-3">
+      <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function TextBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{value}</p>
+    </div>
+  );
+}
+
+function ListBlock({
+  icon,
+  items,
+  label,
+  tone = "default",
+}: {
+  icon: React.ReactNode;
+  items: readonly string[];
+  label: string;
+  tone?: BadgeTone;
+}) {
+  return (
+    <div>
+      <p className="flex items-center gap-1 text-[10px] uppercase tracking-normal text-muted-foreground">
+        <span className="[&_svg]:size-3.5">{icon}</span>
+        {label}
+      </p>
+      <div className="mt-2 space-y-2">
+        {items.length > 0 ? (
+          items.map((item) => (
+            <div key={item} className="flex gap-2 text-xs leading-5">
+              <span className="mt-2 size-1.5 shrink-0 border bg-muted" />
+              <span className={tone === "default" ? "text-muted-foreground" : ""}>
+                {item}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-muted-foreground">No signals provided.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SignalChipGroup({
+  items,
+  label,
+  tone = "default",
+}: {
+  items: readonly string[];
+  label: string;
+  tone?: BadgeTone;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <ChipList items={items} tone={tone} />
+    </div>
+  );
+}
+
+function ChipList({
+  items,
+  limit,
+  tone = "default",
+}: {
+  items: readonly string[];
+  limit?: number;
+  tone?: BadgeTone;
+}) {
+  const visibleItems = limit ? items.slice(0, limit) : items;
+  const hiddenCount = limit && items.length > limit ? items.length - limit : 0;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {visibleItems.length > 0 ? (
+        visibleItems.map((item) => (
+          <Badge key={item} tone={tone}>
+            {item}
+          </Badge>
+        ))
+      ) : (
+        <Badge tone="muted">No evidence</Badge>
+      )}
+      {hiddenCount ? <Badge tone="muted">+{hiddenCount}</Badge> : null}
+    </div>
+  );
+}
+
+function Badge({ children, tone = "default" }: { children: React.ReactNode; tone?: BadgeTone }) {
+  return (
+    <span
+      className={[
+        "inline-flex max-w-full items-center gap-1 border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal",
+        badgeToneClassName(tone),
+      ].join(" ")}
+    >
+      <span className="min-w-0 truncate">{children}</span>
+    </span>
+  );
+}
+
+function ConfidenceBadge({ value }: { value: number }) {
+  return (
+    <Badge tone={confidenceTone(value)}>
+      {Math.round(value * 100)}% confidence
+    </Badge>
+  );
+}
+
+function ScoreBadge({ score }: { score: BantItem["score"] }) {
+  return <Badge tone={score >= 4 ? "success" : score >= 2 ? "warning" : "danger"}>{score}/5</Badge>;
+}
+
+function ScoreBar({ max, value }: { max: number; value: number }) {
+  const width = `${Math.max(0, Math.min(100, (value / max) * 100))}%`;
+
+  return (
+    <div className="h-2 border bg-muted">
+      <div className="h-full bg-foreground" style={{ width }} />
+    </div>
+  );
+}
+
+function getBantRows(qualification: BANTQualification): readonly {
+  label: string;
+  item: BantItem;
+}[] {
+  return [
+    { label: "Budget", item: qualification.budget },
+    { label: "Authority", item: qualification.authority },
+    { label: "Need", item: qualification.need },
+    { label: "Timeline", item: qualification.timeline },
+  ];
+}
+
+function getSummaryCards(state: AnalysisPanelState) {
+  if (state.status === "success") {
+    const { analysis } = state;
+
+    return [
+      {
+        label: "Qualification",
+        value: formatLabel(analysis.leadSnapshot.qualificationLabel),
+        detail: `Lead score ${analysis.leadSnapshot.leadScore}/100`,
+      },
+      {
+        label: "Urgency",
+        value: formatLabel(analysis.leadSnapshot.urgency),
+        detail: `${formatLabel(analysis.gtmRecommendation.priority)} GTM priority`,
+      },
+      {
+        label: "Next step",
+        value: analysis.gtmRecommendation.recommendedMotion,
+        detail: analysis.gtmRecommendation.nextBestAction,
+      },
+    ];
+  }
+
+  if (state.status === "loading") {
+    return [
+      {
+        label: "ICP fit",
+        value: "Working",
+        detail: "Parsing lead and matching FlytBase proof points",
+      },
+      {
+        label: "Urgency",
+        value: "Working",
+        detail: "Looking for timeline and operational trigger signals",
+      },
+      {
+        label: "Next step",
+        value: "Working",
+        detail: "Preparing AE-ready recommendation",
+      },
+    ];
+  }
+
+  if (state.status === "error") {
+    return [
+      {
+        label: "ICP fit",
+        value: "Needs retry",
+        detail: state.error,
+      },
+      {
+        label: "Urgency",
+        value: "Unavailable",
+        detail: "Analysis did not complete",
+      },
+      {
+        label: "Next step",
+        value: "Fix input",
+        detail: "Check validation details and run again",
+      },
+    ];
+  }
+
+  return qualificationSignals.map((signal) => ({
+    label: signal.label,
+    value: "Pending",
+    detail: signal.placeholder,
+  }));
+}
+
+function getPanelSubtitle(state: AnalysisPanelState) {
+  if (state.status === "loading") {
+    return "Running sales intelligence pipeline";
+  }
+
+  if (state.status === "error") {
+    return "Review input and retry";
+  }
+
+  if (state.status === "success") {
+    return "Enterprise sales cockpit generated";
+  }
+
+  return "Awaiting lead intake";
+}
+
+function badgeToneClassName(tone: BadgeTone) {
+  switch (tone) {
+    case "strong":
+      return "border-foreground bg-foreground text-background";
+    case "success":
+      return "border-emerald-600/30 bg-emerald-500/10 text-emerald-700";
+    case "warning":
+      return "border-amber-600/30 bg-amber-500/10 text-amber-700";
+    case "danger":
+      return "border-destructive/30 bg-destructive/10 text-destructive";
+    case "muted":
+      return "border-border bg-muted/40 text-muted-foreground";
+    case "default":
+      return "border-border bg-background text-foreground";
+  }
+}
+
+function confidenceTone(value: number): BadgeTone {
+  if (value >= 0.75) {
+    return "success";
+  }
+
+  if (value >= 0.45) {
+    return "warning";
+  }
+
+  return "danger";
+}
+
+function scoreTone(score: number): BadgeTone {
+  if (score >= 75) {
+    return "success";
+  }
+
+  if (score >= 45) {
+    return "warning";
+  }
+
+  return "danger";
+}
+
+function urgencyTone(urgency: string): BadgeTone {
+  if (urgency === "critical" || urgency === "high") {
+    return "success";
+  }
+
+  if (urgency === "medium") {
+    return "warning";
+  }
+
+  return "muted";
+}
+
+function priorityTone(priority: string): BadgeTone {
+  if (priority === "high") {
+    return "success";
+  }
+
+  if (priority === "medium") {
+    return "warning";
+  }
+
+  return "muted";
+}
+
+function formatLabel(value: string) {
+  return value
+    .split(/[-\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
+}
+
+function formatEmailStepType(value: EmailSequenceStep["type"]) {
+  return formatLabel(value.replace(/-/g, " "));
 }
