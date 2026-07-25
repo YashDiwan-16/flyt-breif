@@ -1,3 +1,4 @@
+import { flytbreifCollections } from "@flyt-breif/core";
 import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
@@ -13,7 +14,7 @@ const userSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: "user" },
+  { collection: flytbreifCollections.users },
 );
 
 const sessionSchema = new Schema(
@@ -27,7 +28,7 @@ const sessionSchema = new Schema(
     userAgent: { type: String },
     userId: { type: ObjectId, ref: "User", required: true },
   },
-  { collection: "session" },
+  { collection: flytbreifCollections.sessions },
 );
 sessionSchema.index({ userId: 1 });
 
@@ -47,7 +48,7 @@ const accountSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: "account" },
+  { collection: flytbreifCollections.accounts },
 );
 accountSchema.index({ userId: 1 });
 
@@ -60,7 +61,7 @@ const verificationSchema = new Schema(
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: "verification" },
+  { collection: flytbreifCollections.verifications },
 );
 verificationSchema.index({ identifier: 1 });
 

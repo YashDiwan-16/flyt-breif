@@ -43,6 +43,10 @@ Copy `apps/web/.env.example` to `apps/web/.env.local` and set either `GOOGLE_GEN
 
 AI calls are kept server-side. The initial health check lives at `GET /api/health-ai` and uses the Vercel AI SDK Google provider from a Next.js route handler.
 
+## Data Model
+
+MongoDB data is scoped to the `flytbreif` database. Shared collection names live in `packages/core/src/database.ts`, and AI analysis responses should validate against `leadAnalysisSchema` before persistence.
+
 ## Scripts
 
 - `pnpm run dev` - start all dev tasks through Turborepo

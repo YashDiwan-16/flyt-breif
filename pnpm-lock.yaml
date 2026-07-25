@@ -261,6 +261,10 @@ importers:
   packages/config: {}
 
   packages/core:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@flyt-breif/config':
         specifier: workspace:*
@@ -271,6 +275,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@flyt-breif/core':
+        specifier: workspace:^
+        version: link:../core
       '@flyt-breif/env':
         specifier: workspace:*
         version: link:../env
