@@ -27,7 +27,7 @@ export function DashboardShell() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
+        <header className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-card px-4 py-3 md:px-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">

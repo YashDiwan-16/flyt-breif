@@ -265,7 +265,7 @@ export function extractLeadSignals({
   };
 }
 
-function scoreBANT(parsedLead: ParsedLeadSignals): BANTScoringOutput {
+export function scoreBANT(parsedLead: ParsedLeadSignals): BANTScoringOutput {
   const signalText = normalizeText(
     [
       parsedLead.companyName,
@@ -288,7 +288,7 @@ function scoreBANT(parsedLead: ParsedLeadSignals): BANTScoringOutput {
   };
 }
 
-function recommendGTMMotion({
+export function recommendGTMMotion({
   caseStudyMatch,
   parsedLead,
   qualification,
@@ -580,6 +580,14 @@ function inferCompanyName(
 
   if (explicitCompanyMatch?.[1]) {
     return titleCase(cleanCompanyCandidate(explicitCompanyMatch[1]));
+  }
+
+  const roleCompanyMatch = rawEmail.match(
+    /\b(?:at|for)\s+([A-Z][a-zA-Z0-9&'.-]+(?:\s+[A-Z][a-zA-Z0-9&'.-]+){0,5})(?:[.,\n]|$)/,
+  );
+
+  if (roleCompanyMatch?.[1]) {
+    return titleCase(cleanCompanyCandidate(roleCompanyMatch[1]));
   }
 
   const host = companyWebsite

@@ -13,6 +13,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@flyt-breif/core": "workspace:*",
     "@flyt-breif/data": "workspace:*",
     "ai": "^7.0.37",
     "zod": "catalog:"

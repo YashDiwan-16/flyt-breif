@@ -12,18 +12,28 @@ import {
   LoaderCircle,
   RotateCcw,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 type LeadInputPanelProps = {
   isAnalyzing: boolean;
   onAnalyzeError: (error: string, details?: readonly string[]) => void;
   onAnalyzeStart: () => void;
-  onAnalyzeSuccess: (analysis: LeadAnalysis, modelId: string) => void;
+  onAnalyzeSuccess: (
+    analysis: LeadAnalysis,
+    modelId: string,
+    analysisStatus: AnalysisGenerationStatus,
+    statusMessage?: string,
+  ) => void;
   onSampleLoaded: () => void;
+  retryRequestId: number;
 };
+
+type AnalysisGenerationStatus = "ai" | "fallback";
 
 type AnalyzeLeadSuccessResponse = {
   ok: true;
+  analysisStatus?: AnalysisGenerationStatus;
+  statusMessage?: string;
   modelId: string;
   analysis: LeadAnalysis;
 };
@@ -46,7 +56,7 @@ const sampleLeads = [
     label: "Solar operator",
     leadInput: {
       rawEmail:
-        "Hi FlytBase team, I lead operations for HelioGrid Solar. We are trying to inspect several utility-scale PV sites more consistently without sending crews across the full field every week. We are evaluating autonomous drone docks for thermal and visual inspection, and we would like to understand what a pilot could look like this quarter.",
+        "Hi FlytBase team, I lead operations for HelioGrid Solar. We manage a utility-scale PV portfolio that is expanding from roughly 150 MW toward 1 GW, and we have budget approved for an autonomous inspection pilot this quarter. We need repeatable thermal and visual inspections without sending crews across every field each week. We are evaluating autonomous drone docks and want to understand pilot scope, deployment requirements, and a path to scale if the first sites work.",
       senderName: "Maya Reddy",
       senderEmail: "maya.reddy@heliogrid.example",
       companyWebsite: "https://heliogrid.example",
@@ -108,6 +118,7 @@ export function LeadInputPanel({
   onAnalyzeStart,
   onAnalyzeSuccess,
   onSampleLoaded,
+  retryRequestId,
 }: LeadInputPanelProps) {
   const [formState, setFormState] = useState<LeadInput>(emptyLeadInput);
   const [fieldErrors, setFieldErrors] = useState<
@@ -116,8 +127,17 @@ export function LeadInputPanel({
   const [apiError, setApiError] = useState<ApiFailure | null>(null);
   const isSubmitting = isAnalyzing;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (retryRequestId > 0) {
+      void analyzeCurrentLead();
+    }
+  }, [retryRequestId]);
+
+  async function analyzeCurrentLead() {
+    if (isSubmitting) {
+      return;
+    }
+
     setApiError(null);
 
     if (!formState.rawEmail.trim()) {
@@ -147,7 +167,12 @@ export function LeadInputPanel({
         return;
       }
 
-      onAnalyzeSuccess(payload.analysis, payload.modelId);
+      onAnalyzeSuccess(
+        payload.analysis,
+        payload.modelId,
+        payload.analysisStatus ?? "ai",
+        payload.statusMessage,
+      );
     } catch (error) {
       const failure = {
         message:
@@ -158,6 +183,11 @@ export function LeadInputPanel({
       setApiError(failure);
       onAnalyzeError(failure.message);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await analyzeCurrentLead();
   }
 
   function updateField(fieldId: keyof LeadInput, value: string) {
@@ -189,7 +219,7 @@ export function LeadInputPanel({
   }
 
   return (
-    <section className="flex min-h-0 flex-col bg-card">
+    <section className="flex min-h-[640px] flex-col border-b bg-card lg:min-h-0 lg:border-b-0">
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-5">
         <div>
           <h2 className="text-sm font-semibold">Inbound Lead</h2>
@@ -354,6 +384,11 @@ function isAnalyzeLeadSuccessResponse(
     isRecord(value) &&
     value.ok === true &&
     typeof value.modelId === "string" &&
+    (value.analysisStatus === undefined ||
+      value.analysisStatus === "ai" ||
+      value.analysisStatus === "fallback") &&
+    (value.statusMessage === undefined ||
+      typeof value.statusMessage === "string") &&
     isRecord(value.analysis)
   );
 }

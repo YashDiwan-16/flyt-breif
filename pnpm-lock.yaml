@@ -201,6 +201,9 @@ importers:
 
   packages/ai:
     dependencies:
+      '@flyt-breif/core':
+        specifier: workspace:*
+        version: link:../core
       '@flyt-breif/data':
         specifier: workspace:*
         version: link:../data

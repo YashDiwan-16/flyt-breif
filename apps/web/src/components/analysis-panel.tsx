@@ -26,6 +26,7 @@ import {
   LoaderCircle,
   Mail,
   Radar,
+  RefreshCcw,
   SearchCheck,
   Send,
   ShieldCheck,
@@ -38,9 +39,18 @@ export type AnalysisPanelState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; error: string; details?: readonly string[] }
-  | { status: "success"; analysis: LeadAnalysis; modelId: string };
+  | {
+      status: "success";
+      analysis: LeadAnalysis;
+      analysisStatus: AnalysisGenerationStatus;
+      modelId: string;
+      statusMessage?: string;
+    };
+
+export type AnalysisGenerationStatus = "ai" | "fallback";
 
 type AnalysisPanelProps = {
+  onRetry?: () => void;
   state: AnalysisPanelState;
 };
 
@@ -55,18 +65,25 @@ const loadingPipeline = [
   "Preparing AE handoff",
 ] as const;
 
-export function AnalysisPanel({ state }: AnalysisPanelProps) {
+export function AnalysisPanel({ onRetry, state }: AnalysisPanelProps) {
   const summaryCards = getSummaryCards(state);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-t bg-background lg:border-l lg:border-t-0">
+    <section className="flex min-h-[680px] flex-1 flex-col border-t bg-background lg:min-h-0 lg:border-l lg:border-t-0">
       <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-2">
         <div>
           <h2 className="text-sm font-semibold">Analysis Results</h2>
           <p className="text-xs text-muted-foreground">{getPanelSubtitle(state)}</p>
         </div>
         {state.status === "success" ? (
-          <AnalysisWorkflowActions analysis={state.analysis} />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ModelStatusIndicator
+              analysisStatus={state.analysisStatus}
+              modelId={state.modelId}
+              statusMessage={state.statusMessage}
+            />
+            <AnalysisWorkflowActions analysis={state.analysis} />
+          </div>
         ) : (
           <Button variant="outline" size="sm" disabled>
             {state.status === "loading" ? (
@@ -98,11 +115,44 @@ export function AnalysisPanel({ state }: AnalysisPanelProps) {
 
         <div className="mt-4">
           {state.status === "success"
-            ? renderAnalysisCockpit(state.analysis, state.modelId)
-            : renderNonSuccessState(state)}
+            ? renderAnalysisCockpit(
+                state.analysis,
+                state.modelId,
+                state.analysisStatus,
+                state.statusMessage,
+              )
+            : renderNonSuccessState(state, onRetry)}
         </div>
       </div>
     </section>
+  );
+}
+
+function ModelStatusIndicator({
+  analysisStatus,
+  modelId,
+  statusMessage,
+}: {
+  analysisStatus: AnalysisGenerationStatus;
+  modelId: string;
+  statusMessage?: string;
+}) {
+  const isFallback = analysisStatus === "fallback";
+
+  return (
+    <div className="flex max-w-full flex-wrap items-center justify-end gap-2 text-xs">
+      <Badge tone={isFallback ? "warning" : "success"}>
+        {isFallback ? "Fallback" : "Gemini"}
+      </Badge>
+      <span className="max-w-44 truncate border bg-background px-2 py-1 font-mono text-[10px] text-muted-foreground">
+        {modelId}
+      </span>
+      {statusMessage ? (
+        <span className="hidden max-w-64 truncate text-[10px] text-muted-foreground xl:inline">
+          {statusMessage}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -137,7 +187,12 @@ function AnalysisWorkflowActions({ analysis }: { analysis: LeadAnalysis }) {
   );
 }
 
-function renderAnalysisCockpit(analysis: LeadAnalysis, modelId: string) {
+function renderAnalysisCockpit(
+  analysis: LeadAnalysis,
+  modelId: string,
+  analysisStatus: AnalysisGenerationStatus,
+  statusMessage?: string,
+) {
   return (
     <div className="space-y-4">
       <LeadSnapshotSection analysis={analysis} />
@@ -151,7 +206,12 @@ function renderAnalysisCockpit(analysis: LeadAnalysis, modelId: string) {
       <GtmMotionSection analysis={analysis} />
       <EmailSequenceSection steps={analysis.emailSequence.steps} strategy={analysis.emailSequence.strategy} />
       <AeHandoffSection analysis={analysis} />
-      <AnalysisSignalsSection analysis={analysis} modelId={modelId} />
+      <AnalysisSignalsSection
+        analysis={analysis}
+        analysisStatus={analysisStatus}
+        modelId={modelId}
+        statusMessage={statusMessage}
+      />
     </div>
   );
 }
@@ -501,12 +561,17 @@ function AeHandoffSection({ analysis }: { analysis: LeadAnalysis }) {
 
 function AnalysisSignalsSection({
   analysis,
+  analysisStatus,
   modelId,
+  statusMessage,
 }: {
   analysis: LeadAnalysis;
+  analysisStatus: AnalysisGenerationStatus;
   modelId: string;
+  statusMessage?: string;
 }) {
   const { parsedSignals } = analysis;
+  const isFallback = analysisStatus === "fallback";
 
   return (
     <section className="border bg-card">
@@ -514,10 +579,22 @@ function AnalysisSignalsSection({
         eyebrow="Analysis Signals Debug Panel"
         icon={<BarChart3 />}
         title="Validated structured output and source trace"
-        action={<Badge tone="muted">{modelId}</Badge>}
+        action={
+          <div className="flex items-center gap-2">
+            <Badge tone={isFallback ? "warning" : "success"}>
+              {isFallback ? "Fallback" : "AI"}
+            </Badge>
+            <Badge tone="muted">{modelId}</Badge>
+          </div>
+        }
       />
       <div className="grid gap-4 p-4 xl:grid-cols-3">
         <div className="space-y-4">
+          <Metric
+            label="Generation status"
+            value={isFallback ? "Deterministic fallback" : "Gemini validated"}
+          />
+          {statusMessage ? <TextBlock label="Status message" value={statusMessage} /> : null}
           <Metric label="Contact email" value={parsedSignals.contactEmail} />
           <Metric label="Company website" value={parsedSignals.companyWebsite} />
           <ListBlock label="Pain points" items={parsedSignals.painPoints} icon={<AlertCircle />} />
@@ -576,7 +653,7 @@ function AnalysisSignalsSection({
   );
 }
 
-function renderNonSuccessState(state: AnalysisPanelState) {
+function renderNonSuccessState(state: AnalysisPanelState, onRetry?: () => void) {
   if (state.status === "loading") {
     return (
       <section className="border bg-card">
@@ -626,7 +703,15 @@ function renderNonSuccessState(state: AnalysisPanelState) {
           eyebrow="Analysis Error"
           icon={<AlertCircle />}
           title="Analysis did not complete"
-          action={<Badge tone="danger">Needs attention</Badge>}
+          action={
+            <div className="flex items-center gap-2">
+              <Badge tone="danger">Needs attention</Badge>
+              <Button variant="outline" size="sm" onClick={onRetry} disabled={!onRetry}>
+                <RefreshCcw />
+                Retry
+              </Button>
+            </div>
+          }
         />
         <div className="p-4">
           <div className="border border-destructive/30 bg-destructive/5 p-4">
@@ -649,8 +734,8 @@ function renderNonSuccessState(state: AnalysisPanelState) {
       <SectionHeader
         eyebrow="Sales Cockpit"
         icon={<Sparkles />}
-        title="Analysis will appear here"
-        action={<Badge tone="muted">Idle</Badge>}
+        title="Ready for inbound lead analysis"
+        action={<Badge tone="muted">Empty</Badge>}
       />
       <div className="grid gap-4 p-4 xl:grid-cols-[1fr_320px]">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -663,11 +748,18 @@ function renderNonSuccessState(state: AnalysisPanelState) {
             </div>
           ))}
         </div>
-        <p className="border bg-background p-4 text-xs leading-5 text-muted-foreground">
-          Paste an inbound email or load a sample, then run analysis to populate lead
-          snapshot, BANT, account research, proof match, GTM motion, outreach, AE handoff,
-          and debug signals.
-        </p>
+        <div className="space-y-3 border bg-background p-4">
+          <p className="text-sm font-semibold">No analysis yet</p>
+          <p className="text-xs leading-5 text-muted-foreground">
+            The cockpit is waiting for a validated lead run. When analysis completes,
+            this panel will show qualification, FlytBase proof, GTM motion, outreach,
+            handoff notes, and the generation status.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Metric label="Primary proof path" value="EnBW solar PV" />
+            <Metric label="Demo-safe mode" value="Fallback ready" />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -1197,7 +1289,10 @@ function getSummaryCards(state: AnalysisPanelState) {
       {
         label: "Next step",
         value: analysis.gtmRecommendation.recommendedMotion,
-        detail: analysis.gtmRecommendation.nextBestAction,
+        detail:
+          state.analysisStatus === "fallback"
+            ? "Fallback-safe handoff generated"
+            : analysis.gtmRecommendation.nextBestAction,
       },
     ];
   }
@@ -1259,7 +1354,9 @@ function getPanelSubtitle(state: AnalysisPanelState) {
   }
 
   if (state.status === "success") {
-    return "Enterprise sales cockpit generated";
+    return state.analysisStatus === "fallback"
+      ? "Deterministic fallback analysis generated"
+      : "Enterprise sales cockpit generated";
   }
 
   return "Awaiting lead intake";
