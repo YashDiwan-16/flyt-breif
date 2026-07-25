@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.24",
+    "@flyt-breif/ai": "workspace:*",
     "@flyt-breif/core": "workspace:*",
     "@flyt-breif/ui": "workspace:*",
     "ai": "^7.0.37",
