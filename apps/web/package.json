@@ -10,12 +10,16 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.24",
     "@flyt-breif/core": "workspace:*",
     "@flyt-breif/ui": "workspace:*",
+    "ai": "^7.0.37",
     "lucide-react": "catalog:",
     "next": "^16.2.11",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "server-only": "^0.0.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@flyt-breif/config": "workspace:*",

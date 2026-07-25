@@ -37,6 +37,12 @@ pnpm run dev:web
 
 Open [http://localhost:3001](http://localhost:3001).
 
+## AI Configuration
+
+Copy `apps/web/.env.example` to `apps/web/.env.local` and set either `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY`. The web app defaults `AI_MODEL_ID` to `gemini-2.5-flash`.
+
+AI calls are kept server-side. The initial health check lives at `GET /api/health-ai` and uses the Vercel AI SDK Google provider from a Next.js route handler.
+
 ## Scripts
 
 - `pnpm run dev` - start all dev tasks through Turborepo
